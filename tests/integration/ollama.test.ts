@@ -48,7 +48,7 @@ describe('Ollama Orchestrator Provider', () => {
     console.log('Response:', response.content?.slice(0, 200));
   });
 
-  it('makes tool calls when tools are provided', async () => {
+  it('makes tool calls when tools are provided', { timeout: 300000 }, async () => {
     if (!await ollamaAvailable()) {
       console.log('Skipping: Ollama not available');
       return;
@@ -84,7 +84,7 @@ describe('Ollama Orchestrator Provider', () => {
       provider: 'ollama',
       model: MODEL,
       baseUrl: OLLAMA_URL,
-      timeoutMs: 120000,
+      timeoutMs: 300000, // 5 min — tool calling on CPU is very slow
     });
 
     const response = await llm({

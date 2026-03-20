@@ -15,12 +15,26 @@ import type { ServerConnection } from '../../types/index.js';
 const BLOCKED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 /**
- * Remove prototype-pollution keys from an object (shallow).
+ * Recursively remove prototype-pollution keys from an object tree.
+ * Handles nested objects and arrays. Uses a seen set for cycle safety.
  */
-function sanitizeKeys(obj: Record<string, unknown>): Record<string, unknown> {
+function sanitizeKeys(obj: Record<string, unknown>, seen?: WeakSet<object>): Record<string, unknown> {
+  const visited = seen ?? new WeakSet();
+  if (visited.has(obj)) return {};
+  visited.add(obj);
+
   const safe = Object.create(null) as Record<string, unknown>;
   for (const [k, v] of Object.entries(obj)) {
-    if (!BLOCKED_KEYS.has(k)) {
+    if (BLOCKED_KEYS.has(k)) continue;
+    if (Array.isArray(v)) {
+      safe[k] = v.map(item =>
+        item && typeof item === 'object' && !(item instanceof Date)
+          ? sanitizeKeys(item as Record<string, unknown>, visited)
+          : item,
+      );
+    } else if (v && typeof v === 'object' && !(v instanceof Date)) {
+      safe[k] = sanitizeKeys(v as Record<string, unknown>, visited);
+    } else {
       safe[k] = v;
     }
   }

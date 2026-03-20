@@ -49,18 +49,28 @@ export class ConnectionPool {
       throw new Error(`Server "${config.name}" is already connected`);
     }
 
-    const adapter = adapterOrFactory
-      ? (typeof adapterOrFactory === 'function' ? adapterOrFactory(config) : adapterOrFactory)
-      : new MCPClientAdapter(config);
+    // Factory function for creating fresh adapter instances on each retry.
+    // Avoids retry-state leakage from partially initialized adapters.
+    const createAdapter = (): MCPAdapter => {
+      if (adapterOrFactory) {
+        return typeof adapterOrFactory === 'function' ? adapterOrFactory(config) : adapterOrFactory;
+      }
+      return new MCPClientAdapter(config);
+    };
+
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= this.retryPolicy.maxRetries; attempt++) {
+      // Fresh adapter per attempt — no leaked transport/client state from prior failures
+      const adapter = createAdapter();
       try {
         await adapter.connect();
         this.adapters.set(config.name, adapter);
         this.emitHealth(config.name, adapter);
         return adapter;
       } catch (error) {
+        // Clean up failed adapter to release any partial resources
+        try { await adapter.disconnect(); } catch { /* best effort cleanup */ }
         lastError = error instanceof Error ? error : new Error(String(error));
 
         if (attempt < this.retryPolicy.maxRetries) {

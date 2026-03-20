@@ -63,6 +63,7 @@ export class Orchestrator {
    * Run the full orchestrator loop and return a complete result.
    */
   async run(query: string, userId?: string): Promise<RunResult> {
+    const startTime = Date.now();
     const events: StreamEvent[] = [];
     for await (const event of this.execute(query, userId)) {
       events.push(event);
@@ -73,11 +74,8 @@ export class Orchestrator {
     const actionsExecuted = events.filter(e => e.type === 'action').length;
     const actionsPending = events.filter(e => e.type === 'approval-needed').length;
 
-    const startEvent = events[0];
-    const doneEvent = events.find(e => e.type === 'done');
-    const durationMs = startEvent && doneEvent
-      ? doneEvent.timestamp.getTime() - startEvent.timestamp.getTime()
-      : 0;
+    // Wall-clock elapsed time — consistent with JSONResponse.collect() semantics
+    const durationMs = Date.now() - startTime;
 
     return {
       response,
