@@ -113,6 +113,24 @@ User Query
 
 The orchestrator (local SLM) handles all tool selection and invocation. The generator (cloud LLM) only sees retrieved results and produces the response. Tool schemas, MCP server topology, and intermediate tool outputs never reach the cloud.
 
+### Architecture Notes
+
+#### Generator Fallback
+
+If `generator` is omitted from `EpicAIConfig`, `EpicAI.start()` silently constructs a generator configuration from the orchestrator's provider settings. For Ollama orchestrators, this means the same local model handles both tool routing and response synthesis. For other providers, a `custom` generator is fabricated using the orchestrator's `llm` function.
+
+This fallback is convenient for development but can produce unexpected behavior in production. If you intend to use a cloud LLM for synthesis (the recommended architecture), always provide an explicit `generator` configuration. If you intend to run fully local, omit `generator` and understand that response quality depends on the orchestrator model's generation capability.
+
+#### Tool Output Sanitization
+
+Retrieval and memory context are sanitized for prompt injection before entering the system prompt (common injection patterns like `ignore previous`, `system:`, `act as` are stripped). However, tool output from MCP servers is inserted into the synthesis prompt without sanitization. This is a known design gap.
+
+For security-sensitive deployments, implement output sanitization in your MCP adapter's `callTool()` response, or add a post-processing step before the generator receives tool results. This gap is tracked for resolution in a future release.
+
+#### Stream Event Typing
+
+Stream event payloads are typed as `Record<string, unknown>` rather than a discriminated union. This means the exact payload schema for each event type is defined by convention (documented below in [StreamEvent Types](#streamevent-types)) rather than enforced by the type system. Consumers should validate event payloads defensively rather than assuming field presence.
+
 ---
 
 ## Configuration Reference
@@ -122,7 +140,7 @@ The orchestrator (local SLM) handles all tool selection and invocation. The gene
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `orchestrator` | `OrchestratorConfig` | Yes | Local SLM for tool routing |
-| `generator` | `GeneratorConfig` | No | Cloud LLM for response synthesis |
+| `generator` | `GeneratorConfig` | No | Cloud LLM for response synthesis (see [Generator Fallback](#generator-fallback)) |
 | `federation` | `FederationConfig` | Yes | MCP server connections |
 | `autonomy` | `AutonomyConfig` | Yes | Tiered action governance |
 | `retrieval` | `RetrievalConfig` | No | Hybrid vector search |
@@ -267,11 +285,13 @@ federation.onHealthChange((h) => {
 Implement this to connect any custom MCP server:
 
 ```typescript
-import { FederationManager, type MCPAdapter } from '@epic-ai/core';
+import { FederationManager, type MCPAdapter, type Tool, type ToolResult } from '@epic-ai/core';
 
 class MyCustomAdapter implements MCPAdapter {
-  readonly name = 'my-server';
+  readonly name: string;
   status: 'disconnected' | 'connecting' | 'connected' | 'error' = 'disconnected';
+
+  constructor(name: string) { this.name = name; }
 
   async connect(): Promise<void> { /* negotiate transport */ }
   async disconnect(): Promise<void> { /* cleanup */ }
@@ -280,11 +300,13 @@ class MyCustomAdapter implements MCPAdapter {
   async ping(): Promise<number> { /* return latency ms */ }
 }
 
-// Pass an instance directly
-await federation.connect('my-server', config, new MyCustomAdapter());
+const serverConfig = { name: 'my-server', transport: 'stdio' as const, command: 'my-mcp' };
+
+// Pass an adapter instance directly
+await federation.connect('my-server', serverConfig, new MyCustomAdapter('my-server'));
 
 // Or pass a factory function
-await federation.connect('my-server', config, (cfg) => new MyCustomAdapter(cfg));
+await federation.connect('my-server', serverConfig, (cfg) => new MyCustomAdapter(cfg.name));
 ```
 
 If no adapter is provided, `ConnectionPool` defaults to `MCPClientAdapter` (the built-in MCP protocol client).
@@ -503,9 +525,9 @@ await memory.etch('user-123', {
 ```typescript
 const memories = await memory.recall('user-123', {
   type: 'threat-finding',
-  minImportance: 'medium',
+  importance: 'medium',
   limit: 10,
-  sort: 'importance',  // or 'recency' or 'frequency'
+  sortBy: 'importance',  // or 'recency' or 'frequency'
 });
 ```
 
@@ -822,7 +844,8 @@ class MySecurityTool implements MCPAdapter {
 }
 
 // Register with the federation
-await federation.connect('my-tool', serverConfig, new MySecurityTool());
+const config = { name: 'my-tool', transport: 'stdio' as const, command: 'my-security-tool' };
+await federation.connect('my-tool', config, new MySecurityTool());
 ```
 
 ### Custom Vector Store
