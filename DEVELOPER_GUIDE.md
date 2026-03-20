@@ -123,15 +123,15 @@ For production deployments, always provide an explicit `generator` configuration
 
 #### Prompt Injection Defense
 
-Sanitization is applied at two distinct boundaries:
+All externally-sourced content passes through `sanitizeInjectedContent()` before entering any prompt. Sanitization is applied at three boundaries:
 
-1. **Before the planner loop** — Retrieval results and memory context are sanitized via `sanitizeInjectedContent()` and wrapped in `<DATA_CONTEXT>` tags with an explicit instruction boundary before entering the orchestrator's system prompt. This prevents injected content from steering tool selection.
+1. **Before the planner loop** — Retrieval results and memory context are sanitized and wrapped in `<DATA_CONTEXT>` tags with an explicit instruction boundary before entering the orchestrator's system prompt.
 
-2. **Before the synthesis prompt** — Tool output from MCP servers is sanitized via `sanitizeInjectedContent()` and wrapped in `<DATA_CONTEXT>` tags before the generator receives it for response synthesis.
+2. **Before the planner's next iteration** — Tool output from MCP servers is sanitized via `sanitizeInjectedContent()` before being pushed back into the planner's message history as `role: 'tool'` messages. The planner never sees raw, unsanitized tool output.
 
-**Trust boundary note:** Tool results re-enter the planner loop as `role: 'tool'` messages in the orchestrator's conversation history. These messages are sanitized before synthesis but are present as raw tool output in the planner context. The planner (local SLM) sees tool results without sanitization to preserve its ability to reason about them for subsequent tool calls. This is a deliberate design tradeoff — the planner must see actual tool output to make routing decisions, but this means a compromised MCP server could influence the planner's tool selection in subsequent iterations.
+3. **Before the synthesis prompt** — Tool output is sanitized again and wrapped in `<DATA_CONTEXT>` tags before the generator receives it for response synthesis.
 
-`sanitizeInjectedContent()` is a heuristic mitigation (strips common injection prefixes), not a formal security boundary. For deployments with untrusted MCP servers, implement output validation in your adapter's `callTool()` response and consider limiting `maxIterations` to reduce the planner's exposure to adversarial tool output.
+`sanitizeInjectedContent()` is a heuristic mitigation that strips lines starting with common injection prefixes (`ignore previous`, `system:`, `act as`, etc.). It is not a formal security boundary — sophisticated injection attacks may bypass prefix-based filtering. For deployments with untrusted MCP servers, implement additional output validation in your adapter's `callTool()` response and consider limiting `maxIterations` to constrain the planner's exposure.
 
 #### Stream Event Typing
 
@@ -960,4 +960,4 @@ The wizard:
 
 ---
 
-*Epic AI® is a registered trademark of protectNIL Inc. (U.S. Reg. No. 7,371,952)*
+*Epic AI® is a registered trademark of protectNIL Inc. (U.S. Reg. No. 7,748,019)*
