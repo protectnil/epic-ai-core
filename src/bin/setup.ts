@@ -260,7 +260,7 @@ async function main(): Promise<void> {
   console.log('  Or edit epic-ai.config.ts to add your MCP servers.');
   console.log('');
   console.log('  Built on the Epic AI\u00AE Intelligence Platform');
-  console.log('  Epic AI\u00AE is a registered trademark of protectNIL Inc. (U.S. Reg. No. 7,371,952)');
+  console.log('  Epic AI\u00AE is a registered trademark of protectNIL Inc. (U.S. Reg. No. 7,748,019)');
   console.log('');
 }
 
