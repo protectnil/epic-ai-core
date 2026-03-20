@@ -38,13 +38,20 @@ export class ConnectionPool {
 
   /**
    * Connect to an MCP server with retry logic.
+   * Accepts an optional custom adapter or factory function.
+   * If not provided, defaults to MCPClientAdapter.
    */
-  async connect(config: ServerConnection): Promise<MCPAdapter> {
+  async connect(
+    config: ServerConnection,
+    adapterOrFactory?: MCPAdapter | ((config: ServerConnection) => MCPAdapter),
+  ): Promise<MCPAdapter> {
     if (this.adapters.has(config.name)) {
       throw new Error(`Server "${config.name}" is already connected`);
     }
 
-    const adapter = new MCPClientAdapter(config);
+    const adapter = adapterOrFactory
+      ? (typeof adapterOrFactory === 'function' ? adapterOrFactory(config) : adapterOrFactory)
+      : new MCPClientAdapter(config);
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= this.retryPolicy.maxRetries; attempt++) {

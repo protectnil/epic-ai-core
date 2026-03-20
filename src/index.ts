@@ -16,6 +16,7 @@ export { ConnectionPool } from './federation/ConnectionPool.js';
 export { ToolRegistry } from './federation/ToolRegistry.js';
 export { Correlator } from './federation/Correlator.js';
 export { MCPClientAdapter } from './federation/adapters/MCPClientAdapter.js';
+export type { MCPAdapter } from './federation/adapters/base.js';
 
 // Autonomy
 export { TieredAutonomy } from './autonomy/TieredAutonomy.js';

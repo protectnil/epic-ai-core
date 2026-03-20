@@ -41,9 +41,13 @@ export class FederationManager {
    * Connect to a single MCP server.
    * Discovers tools and registers them in the unified catalog.
    */
-  async connect(name: string, config: ServerConnection): Promise<this> {
+  async connect(
+    name: string,
+    config: ServerConnection,
+    adapterOrFactory?: MCPAdapter | ((config: ServerConnection) => MCPAdapter),
+  ): Promise<this> {
     const serverConfig = { ...config, name };
-    const adapter = await this.pool.connect(serverConfig);
+    const adapter = await this.pool.connect(serverConfig, adapterOrFactory);
 
     this.adapterMap.set(name, adapter);
 
