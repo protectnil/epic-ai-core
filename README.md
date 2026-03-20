@@ -9,7 +9,7 @@
 
 **Epic AI®** is an open source TypeScript SDK for building AI agents that federate across multiple Model Context Protocol (MCP) servers with tiered autonomy governance, hybrid retrieval, persistent memory, persona routing, and tamper-evident audit trails.
 
-Built by [protectNIL Inc.](https://protectnil.com) — Epic AI® is a registered trademark (U.S. Reg. No. 7,748,019).
+Built by [protectNIL Inc.](https://protectnil.com) — Epic AI® is a registered trademark (U.S. Reg. No. 7,371,952).
 
 ---
 
@@ -495,7 +495,7 @@ You may not use this software except in compliance with the License. A copy of t
 
 ## Trademark Notice
 
-**Epic AI®** is a registered trademark of protectNIL Inc., U.S. Trademark Registration No. 7,748,019. Use of the Epic AI® name and mark in connection with software, services, or documentation is subject to the trademark policies of protectNIL Inc.
+**Epic AI®** is a registered trademark of protectNIL Inc., U.S. Trademark Registration No. 7,371,952. Use of the Epic AI® name and mark in connection with software, services, or documentation is subject to the trademark policies of protectNIL Inc.
 
 The `@epic-ai/core` npm package and this repository are official specimens of use of the Epic AI® mark in commerce in connection with downloadable computer software for artificial intelligence agent orchestration.
 

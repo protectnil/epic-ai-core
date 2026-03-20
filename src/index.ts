@@ -4,7 +4,7 @@
  * Copyright 2026 protectNIL Inc. Apache-2.0
  *
  * Epic AI is a registered trademark of protectNIL Inc.
- * U.S. Trademark Registration No. 7,748,019
+ * U.S. Trademark Registration No. 7,371,952
  */
 
 // Entrypoint
