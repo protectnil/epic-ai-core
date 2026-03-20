@@ -1,13 +1,15 @@
 # Epic AI®
-## Zero LLM Context MCP Orchestrator
+## Zero LLM Context MCP Orchestrator — Intelligent Virtual Assistant (IVA) for all 10 (ISC)² security domains
 
-[![npm version](https://img.shields.io/npm/v/@epic-ai/core.svg?style=flat)](https://www.npmjs.com/package/@epic-ai/core)
+> **Local SLM routes tools, cloud LLM responds. Security data never leaves your infrastructure.**
+
+[![npm version](https://img.shields.io/npm/v/@epicai/core.svg?style=flat)](https://www.npmjs.com/package/@epicai/core)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/protectnil/epic-ai-core/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
 
-**Epic AI®** is an open source TypeScript SDK for building Intelligent Virtual Assistants (IVA) that federate across multiple Model Context Protocol (MCP) servers with tiered autonomy governance, hybrid retrieval, persistent memory, persona routing, and tamper-evident audit trails. Tool schemas and security data never leave your infrastructure — the local SLM routes tools, the cloud LLM writes the response.
+**Epic AI®** is an open source TypeScript SDK for building Intelligent Virtual Assistants (IVA) that federate across multiple Model Context Protocol (MCP) servers with tiered autonomy governance, hybrid retrieval, persistent memory, persona routing, and tamper-evident audit trails — spanning all 10 (ISC)² security domains. Tool schemas and security data never leave your infrastructure — the local SLM routes tools, the cloud LLM writes the response.
 
 Built by [protectNIL Inc.](https://protectnil.com) — Epic AI® is a registered trademark (U.S. Reg. No. 7,748,019).
 
@@ -32,12 +34,12 @@ Every MCP tool schema, every intermediate tool result, and every routing decisio
 ## Quick Start
 
 ```bash
-npm install @epic-ai/core
+npm install @epicai/core
 npx epic-ai setup
 ```
 
 ```typescript
-import { EpicAI } from '@epic-ai/core';
+import { EpicAI } from '@epicai/core';
 
 const agent = await EpicAI.create({
   orchestrator: { provider: 'ollama', model: 'mistral:7b' },
@@ -141,7 +143,7 @@ The orchestrator (local SLM) never sends tool schemas to the generator (cloud LL
 Connect any number of MCP servers behind a single interface. The `FederationManager` manages connection lifecycles, health checks, and retry policies across all registered servers. The `ToolRegistry` provides unified tool discovery. The `Correlator` resolves the same entity (an IP address, a user, a hostname) across data from multiple servers.
 
 ```typescript
-import { FederationManager } from '@epic-ai/core';
+import { FederationManager } from '@epicai/core';
 
 const federation = new FederationManager({
   servers: [
@@ -178,7 +180,7 @@ Every tool call the orchestrator requests passes through the `TieredAutonomy` en
 Dynamic `PolicyEngine` rules can override tier assignments at runtime based on payload content, time-of-day, source server, or any custom condition. The `ApprovalQueue` supports in-memory or Redis persistence with configurable TTL and expiry behavior.
 
 ```typescript
-import { TieredAutonomy } from '@epic-ai/core';
+import { TieredAutonomy } from '@epicai/core';
 
 const autonomy = new TieredAutonomy(
   {
@@ -225,8 +227,8 @@ RRF fusion balances all three signals without requiring manual weight tuning.
 Persistent memory stores recalled context with importance scores, enabling agents to surface high-signal memories while suppressing stale noise.
 
 ```typescript
-import { HybridRetriever } from '@epic-ai/core';
-import { QdrantAdapter } from '@epic-ai/core/retrieval/adapters/qdrant';
+import { HybridRetriever } from '@epicai/core';
+import { QdrantAdapter } from '@epicai/core/retrieval/adapters/qdrant';
 
 const retriever = new HybridRetriever({
   dense:  { provider: 'qdrant', collection: 'dense-collection',  adapter: new QdrantAdapter(client, 'dense-collection') },
@@ -249,7 +251,7 @@ const results = await retriever.search('lateral movement indicators past 48h');
 The `PersonaManager` and `SystemPromptBuilder` compose the final system prompt delivered to the generator LLM. Persona configuration controls name, tone, domain focus, vocabulary substitutions, and output constraints — enabling purpose-built agents without modifying orchestration logic.
 
 ```typescript
-import { PersonaManager, SystemPromptBuilder } from '@epic-ai/core';
+import { PersonaManager, SystemPromptBuilder } from '@epicai/core';
 
 const persona = new PersonaManager();
 persona.register({
@@ -273,7 +275,7 @@ Multiple personas can be defined and switched at runtime via the agent configura
 Every action taken by the agent — tool invocations, autonomy decisions, approval events — is written to the `AuditTrail`. Each record is assigned a monotonically increasing sequence number and a SHA-256 hash that chains to the previous record, making retroactive tampering detectable.
 
 ```typescript
-import { AuditTrail } from '@epic-ai/core';
+import { AuditTrail } from '@epicai/core';
 
 const audit = new AuditTrail({ store: 'append-only-log', path: '/var/log/epic-ai/audit.jsonl', integrity: 'sha256-chain' });
 
@@ -313,7 +315,7 @@ Each adapter implements the `MCPAdapter` interface and handles authentication, r
 ### Example: Splunk Adapter
 
 ```typescript
-import { SplunkMCPServer } from '@epic-ai/core/mcp-servers/splunk';
+import { SplunkMCPServer } from '@epicai/core/mcp-servers/splunk';
 
 const splunk = new SplunkMCPServer({
   host:     'splunk.corp.example.com',
@@ -336,7 +338,7 @@ All 40 adapters share a consistent interface — swap platforms without changing
 Event callbacks for every agent lifecycle event. Token and cost tracking per invocation. OpenTelemetry integration via `createOTelEventCallback` and `createOTelLogCallback`.
 
 ```typescript
-import { ObservabilityEmitter, TokenTracker, createOTelEventCallback } from '@epic-ai/core';
+import { ObservabilityEmitter, TokenTracker, createOTelEventCallback } from '@epicai/core';
 
 const emitter = new ObservabilityEmitter();
 emitter.onEvent(createOTelEventCallback(tracer));
@@ -356,7 +358,7 @@ const summary = tracker.summary(); // total tokens, total cost, per-model breakd
 - **Prompt cache** — SHA-256 keyed in-memory cache for repeated prompt fragments (`PromptCache`)
 
 ```typescript
-import { RateLimiter, GracefulShutdown, FileCheckpointStore } from '@epic-ai/core';
+import { RateLimiter, GracefulShutdown, FileCheckpointStore } from '@epicai/core';
 
 const limiter  = new RateLimiter({ requestsPerSecond: 10, burst: 20 });
 const shutdown = new GracefulShutdown({ timeoutMs: 15_000 });
@@ -440,7 +442,7 @@ for await (const event of agent.stream('Identify all endpoints with active C2 be
 
 Full TypeScript API documentation is available at [https://github.com/protectnil/epic-ai-core/tree/master/docs/api](https://github.com/protectnil/epic-ai-core/tree/master/docs/api).
 
-All public types are exported from `@epic-ai/core` and are fully documented with JSDoc. The package ships declaration files (`.d.ts`) alongside all compiled modules.
+All public types are exported from `@epicai/core` and are fully documented with JSDoc. The package ships declaration files (`.d.ts`) alongside all compiled modules.
 
 ### Primary Exports
 
@@ -502,7 +504,7 @@ You may not use this software except in compliance with the License. A copy of t
 
 **Epic AI®** is a registered trademark of protectNIL Inc., U.S. Trademark Registration No. 7,748,019. Use of the Epic AI® name and mark in connection with software, services, or documentation is subject to the trademark policies of protectNIL Inc.
 
-The `@epic-ai/core` npm package and this repository are official specimens of use of the Epic AI® mark in commerce in connection with downloadable computer software featuring an Intelligent Virtual Assistant (IVA) for cybersecurity, utilizing natural language processing (NLP), natural language understanding (NLU), machine learning, and generative and conversational AI to access and process third-party security sources of information across all 10 (ISC)² security domains.
+The `@epicai/core` npm package and this repository are official specimens of use of the Epic AI® mark in commerce in connection with downloadable computer software featuring an Intelligent Virtual Assistant (IVA) for cybersecurity, utilizing natural language processing (NLP), natural language understanding (NLU), machine learning, and generative and conversational AI to access and process third-party security sources of information across all 10 (ISC)² security domains.
 
 All other trademarks, service marks, and product names referenced in this document are the property of their respective owners. CrowdStrike, Splunk, Palo Alto Networks, Microsoft Sentinel, IBM QRadar, and all other third-party names are used solely to identify compatible integrations and are not affiliated with or endorsed by protectNIL Inc.
 
