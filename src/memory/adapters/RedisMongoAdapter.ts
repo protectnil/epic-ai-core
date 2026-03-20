@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Redis + MongoDB Memory Adapter
+ * @epicai/core — Redis + MongoDB Memory Adapter
  * Redis as read-through cache, MongoDB as durable persistent store.
  * Adapted from NILAssist useEtchedMemory.ts and RedisConnectionPool.ts patterns.
  * Built on the Epic AI Intelligence Platform

@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Redis Approval Queue
+ * @epicai/core — Redis Approval Queue
  * Redis-backed approval queue for production deployments.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

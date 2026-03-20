@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Autonomy Layer Tests
+ * @epicai/core — Autonomy Layer Tests
  * Tests TieredAutonomy, PolicyEngine, ApprovalQueue without external deps.
  */
 

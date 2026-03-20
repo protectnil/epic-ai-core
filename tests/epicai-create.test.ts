@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — EpicAI.create() Tests
+ * @epicai/core — EpicAI.create() Tests
  * Verifies that EpicAI.create() with valid config returns an agent with real methods.
  */
 

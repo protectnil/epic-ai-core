@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Orchestrator Provider
+ * @epicai/core — Orchestrator Provider
  * Abstraction for local model providers (Ollama, vLLM, custom).
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

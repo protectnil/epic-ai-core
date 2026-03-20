@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Persona Layer Tests
+ * @epicai/core — Persona Layer Tests
  */
 
 import { describe, it, expect } from 'vitest';

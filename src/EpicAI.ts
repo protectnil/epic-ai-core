@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — EpicAI Entrypoint
+ * @epicai/core — EpicAI Entrypoint
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0
  */

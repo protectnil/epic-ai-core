@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Error Classifier
+ * @epicai/core — Error Classifier
  * Classifies errors as transient (retry) or permanent (fail fast).
  * Different retry strategies for different error types.
  * Built on the Epic AI Intelligence Platform

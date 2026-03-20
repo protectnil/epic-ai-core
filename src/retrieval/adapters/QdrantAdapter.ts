@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Qdrant Vector Store Adapter
+ * @epicai/core — Qdrant Vector Store Adapter
  * Triple-representation: dense + miniCOIL sparse + BM25 via Qdrant named vectors.
  * Adapted from NILAssist useQdrant.ts patterns.
  * Built on the Epic AI Intelligence Platform

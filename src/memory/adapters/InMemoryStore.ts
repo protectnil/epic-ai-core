@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — In-Memory Store
+ * @epicai/core — In-Memory Store
  * For development and testing. Not for production use.
  * Adapted from NILAssist useEtchedMemory.ts patterns.
  * Built on the Epic AI Intelligence Platform

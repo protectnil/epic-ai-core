@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Persona Manager
+ * @epicai/core — Persona Manager
  * Register, switch, and manage personas for voice routing.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

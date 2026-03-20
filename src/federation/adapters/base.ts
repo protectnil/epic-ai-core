@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Federation Adapter Base Interface
+ * @epicai/core — Federation Adapter Base Interface
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0
  */

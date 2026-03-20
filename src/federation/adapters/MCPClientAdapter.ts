@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — MCP Client Adapter
+ * @epicai/core — MCP Client Adapter
  * Wraps @modelcontextprotocol/sdk Client for a single MCP server connection.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — OpenTelemetry Integration
+ * @epicai/core — OpenTelemetry Integration
  * Converts StreamEvents and LogEntries into OTEL-compatible spans.
  * Consumer provides their own OTEL SDK — we just format the data.
  * Built on the Epic AI Intelligence Platform

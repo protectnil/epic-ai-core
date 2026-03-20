@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Rank Fusion
+ * @epicai/core — Rank Fusion
  * Reciprocal Rank Fusion (RRF), weighted fusion, and custom fusion strategies.
  * Adapted from production patterns in NILAssist (useRetriever.ts).
  * Built on the Epic AI Intelligence Platform

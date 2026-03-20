@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — AuditTrail with JSONLAdapter Tests
+ * @epicai/core — AuditTrail with JSONLAdapter Tests
  * Tests write + read + verify chain using the JSONL file adapter.
  */
 

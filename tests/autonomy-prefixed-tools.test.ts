@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — TieredAutonomy Prefixed Tool Name Tests
+ * @epicai/core — TieredAutonomy Prefixed Tool Name Tests
  * Verifies that server-prefixed tool names (e.g. "vault:read") correctly
  * match against unprefixed rule entries (e.g. "read").
  */

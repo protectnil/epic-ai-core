@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Persistent Memory
+ * @epicai/core — Persistent Memory
  * Importance-weighted persistent memory with etch/recall/context/forget.
  * Adapted from NILAssist useEtchedMemory.ts patterns.
  * Built on the Epic AI Intelligence Platform

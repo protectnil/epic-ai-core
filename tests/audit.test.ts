@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Audit Layer Tests
+ * @epicai/core — Audit Layer Tests
  * Tests AuditTrail hash chain integrity, recording, querying, and export.
  */
 

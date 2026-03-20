@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Ollama Integration Test
+ * @epicai/core — Ollama Integration Test
  * Tests the orchestrator provider against a real Mistral Small 3 model.
  * Requires: ollama running with mistral-small3.1 pulled.
  * CPU inference — expect 10-60 seconds per call.

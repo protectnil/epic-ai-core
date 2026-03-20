@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — JSONL Audit Store Adapter
+ * @epicai/core — JSONL Audit Store Adapter
  * Append-only JSON Lines file for production audit logging.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

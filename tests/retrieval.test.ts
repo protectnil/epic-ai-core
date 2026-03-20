@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Retrieval + Memory Tests
+ * @epicai/core — Retrieval + Memory Tests
  * Tests RankFusion, HybridRetriever, PersistentMemory with in-memory adapters.
  */
 

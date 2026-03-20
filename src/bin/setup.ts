@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * @epic-ai/core — CLI Setup Tool
+ * @epicai/core — CLI Setup Tool
  * `npx epic-ai setup` — idempotent environment setup.
  * Detects Ollama, pulls model, validates connection, generates config.
  * Built on the Epic AI Intelligence Platform
@@ -124,7 +124,7 @@ function generateConfig(model: string, forceConfig: boolean): boolean {
     return true;
   }
 
-  const config = `import { EpicAI } from '@epic-ai/core';
+  const config = `import { EpicAI } from '@epicai/core';
 
 const agent = await EpicAI.create({
   orchestrator: {
@@ -255,7 +255,7 @@ async function main(): Promise<void> {
   console.log('');
   console.log('  Next steps:');
   console.log('');
-  console.log("    import { EpicAI } from '@epic-ai/core';");
+  console.log("    import { EpicAI } from '@epicai/core';");
   console.log('');
   console.log('  Or edit epic-ai.config.ts to add your MCP servers.');
   console.log('');

@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Token & Cost Tracker
+ * @epicai/core — Token & Cost Tracker
  * Tracks token usage and estimated costs across orchestrator and generator calls.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

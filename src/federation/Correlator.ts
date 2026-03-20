@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Correlator
+ * @epicai/core — Correlator
  * Cross-source entity and event correlation across federated MCP servers.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Checkpoint / Durable Execution
+ * @epicai/core — Checkpoint / Durable Execution
  * Save and restore orchestrator state for crash recovery.
  * Agent can resume from the last checkpoint after a crash.
  * Built on the Epic AI Intelligence Platform

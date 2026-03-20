@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — SSE Writer
+ * @epicai/core — SSE Writer
  * Server-Sent Events format helpers.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

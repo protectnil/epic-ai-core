@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Event Emitter
+ * @epicai/core — Event Emitter
  * Structured event callback system for observability.
  * Consumers pipe events to their own logging/monitoring stack.
  * Built on the Epic AI Intelligence Platform

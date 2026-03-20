@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Connection Pool
+ * @epicai/core — Connection Pool
  * Manages N concurrent MCP server connections with retry and health monitoring.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

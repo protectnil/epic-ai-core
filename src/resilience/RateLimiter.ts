@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Rate Limiter
+ * @epicai/core — Rate Limiter
  * Protects MCP servers from agent flooding and prevents runaway loops.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

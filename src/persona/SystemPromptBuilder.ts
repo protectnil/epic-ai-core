@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — System Prompt Builder
+ * @epicai/core — System Prompt Builder
  * Composes system prompts from persona config, conversation context, and memories.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

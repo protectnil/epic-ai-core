@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Sanitization & Logger Tests
+ * @epicai/core — Sanitization & Logger Tests
  * Covers the raw planner-message boundary and consoleLogger behavior.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @epic-ai/core — Hybrid Retriever
+ * @epicai/core — Hybrid Retriever
  * Triple-representation search: dense + miniCOIL sparse + BM25, fused via RRF.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0
