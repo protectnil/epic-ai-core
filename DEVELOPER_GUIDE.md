@@ -147,7 +147,14 @@ All externally-sourced content passes through `sanitizeInjectedContent()` before
 
 #### Stream Event Typing
 
-Stream event payloads are typed as `Record<string, unknown>` rather than a discriminated union. The exact payload schema for each event type is defined by convention (documented below in [StreamEvent Types](#streamevent-types)) rather than enforced by the type system. This is a known design gap — the stream contract lives in documentation and tests rather than in types. Consumers must validate event payloads defensively rather than assuming field presence. A future release may introduce typed discriminated unions for stream events.
+`StreamEvent` is a discriminated union with typed payloads for each event type. The type system enforces exact payload shapes at compile time:
+
+```typescript
+import type { PlanEvent, ActionEvent, ApprovalNeededEvent, ResultEvent,
+  NarrativeEvent, MemoryEvent, ErrorEvent, DoneEvent, StreamEvent } from '@epic-ai/core';
+```
+
+Each variant is a separate interface (`PlanEvent`, `ActionEvent`, etc.) with a literal `type` discriminant, a typed `data` object, and a `timestamp: Date`. TypeScript narrows the payload automatically in `switch` statements on `event.type`.
 
 #### Startup Validation Order
 
@@ -690,18 +697,18 @@ for await (const event of agent.stream('Scan all domains for critical threats'))
 }
 ```
 
-### StreamEvent Types
+### StreamEvent Types (Discriminated Union)
 
-| Type | Data | Description |
-|------|------|-------------|
-| `plan` | `{ iteration, toolCalls: string[] }` | Orchestrator selected tools for this iteration |
-| `action` | `{ tool, server, durationMs }` | Tool executed |
-| `approval-needed` | `{ actionId, tool, server, tier }` | Action blocked, needs human approval |
-| `result` | `{ tool, content, isError }` | Tool returned data |
-| `memory` | `{ etched: boolean, findingsCount }` | Memory etched after tool execution |
-| `narrative` | `{ text }` | Generator produced text |
-| `error` | `{ message }` | Error occurred |
-| `done` | `{ loopIterations, actionsExecuted, actionsPending }` | Loop complete (1-based iteration count, run-local pending count) |
+| Type | Interface | Data | Description |
+|------|-----------|------|-------------|
+| `plan` | `PlanEvent` | `{ iteration: number; toolCalls: string[] }` | Orchestrator selected tools for this iteration |
+| `action` | `ActionEvent` | `{ tool: string; server: string; durationMs: number }` | Tool executed |
+| `approval-needed` | `ApprovalNeededEvent` | `{ actionId: string; tool: string; server: string; tier: string }` | Action blocked, needs human approval |
+| `result` | `ResultEvent` | `{ tool: string; content: unknown; isError: boolean }` | Tool returned data |
+| `narrative` | `NarrativeEvent` | `{ text: string }` | Generator produced text |
+| `memory` | `MemoryEvent` | `{ etched: boolean; findingsCount: number }` | Memory etched after tool execution |
+| `error` | `ErrorEvent` | `{ message: string; tool?: string; server?: string }` | Error occurred |
+| `done` | `DoneEvent` | `{ loopIterations: number; actionsExecuted: number; actionsPending: number }` | Loop complete (1-based iteration count, run-local pending count) |
 
 ---
 
