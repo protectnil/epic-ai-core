@@ -64,7 +64,7 @@ Each layer has an adapter interface. Contributions of new adapters (vector store
 Use [GitHub Issues](https://github.com/protectnil/epic-ai-core/issues). Include:
 
 - Node.js version
-- `@epic-ai/core` version
+- `@epicai/core` version
 - Minimal reproduction steps
 - Expected vs actual behavior
 

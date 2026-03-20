@@ -1,6 +1,6 @@
 # Epic AI® Core — Developer Guide
 
-**SDK:** `@epic-ai/core`
+**SDK:** `@epicai/core`
 **Version:** 0.1.0
 **License:** Apache 2.0
 **Runtime:** Node.js >= 20.0.0, TypeScript 5.3+
@@ -35,7 +35,7 @@ Epic AI® Core is an Intelligent Virtual Assistant (IVA) framework for cybersecu
 ## Installation
 
 ```bash
-npm install @epic-ai/core
+npm install @epicai/core
 ```
 
 Optional peer dependencies for production:
@@ -49,7 +49,7 @@ npm install mongodb                   # Audit + memory persistence
 ## Quick Start
 
 ```typescript
-import { EpicAI } from '@epic-ai/core';
+import { EpicAI } from '@epicai/core';
 
 const agent = await EpicAI.create({
   orchestrator: { provider: 'ollama', model: 'mistral:7b' },
@@ -151,7 +151,7 @@ All externally-sourced content passes through `sanitizeInjectedContent()` before
 
 ```typescript
 import type { PlanEvent, ActionEvent, ApprovalNeededEvent, ResultEvent,
-  NarrativeEvent, MemoryEvent, ErrorEvent, DoneEvent, StreamEvent } from '@epic-ai/core';
+  NarrativeEvent, MemoryEvent, ErrorEvent, DoneEvent, StreamEvent } from '@epicai/core';
 ```
 
 Each variant is a separate interface (`PlanEvent`, `ActionEvent`, etc.) with a literal `type` discriminant, a typed `data` object, and a `timestamp: Date`. TypeScript narrows the payload automatically in `switch` statements on `event.type`.
@@ -265,7 +265,7 @@ The federation layer connects N MCP servers behind a single interface with unifi
 ### Connecting Servers
 
 ```typescript
-import { FederationManager } from '@epic-ai/core';
+import { FederationManager } from '@epicai/core';
 
 const federation = new FederationManager({
   servers: [
@@ -321,7 +321,7 @@ federation.onHealthChange((h) => {
 Implement this to connect any custom MCP server:
 
 ```typescript
-import { FederationManager, type MCPAdapter, type Tool, type ToolResult } from '@epic-ai/core';
+import { FederationManager, type MCPAdapter, type Tool, type ToolResult } from '@epicai/core';
 
 class MyCustomAdapter implements MCPAdapter {
   readonly name: string;
@@ -362,7 +362,7 @@ Every tool call passes through the TieredAutonomy engine before execution. Three
 ### Tier Evaluation
 
 ```typescript
-import { TieredAutonomy } from '@epic-ai/core';
+import { TieredAutonomy } from '@epicai/core';
 
 const autonomy = new TieredAutonomy(
   {
@@ -436,7 +436,7 @@ Controls agent identity, system prompt composition, vocabulary, and output const
 ### Registering Personas
 
 ```typescript
-import { PersonaManager } from '@epic-ai/core';
+import { PersonaManager } from '@epicai/core';
 
 const persona = new PersonaManager();
 
@@ -485,8 +485,8 @@ Triple-representation hybrid search with Reciprocal Rank Fusion (RRF).
 ### Setup
 
 ```typescript
-import { HybridRetriever } from '@epic-ai/core';
-import { QdrantAdapter } from '@epic-ai/core/retrieval/adapters/qdrant';
+import { HybridRetriever } from '@epicai/core';
+import { QdrantAdapter } from '@epicai/core/retrieval/adapters/qdrant';
 
 const retriever = new HybridRetriever({
   dense: { provider: 'qdrant', adapter: new QdrantAdapter({ host: 'localhost', port: 6333, collection: 'dense' }) },
@@ -544,7 +544,7 @@ Importance-weighted persistent memory with access-frequency auto-promotion.
 ### Storing Memories
 
 ```typescript
-import { PersistentMemory, InMemoryStore } from '@epic-ai/core';
+import { PersistentMemory, InMemoryStore } from '@epicai/core';
 
 const memory = new PersistentMemory({ store: new InMemoryStore(), cacheTTLMs: 300000 });
 
@@ -600,7 +600,7 @@ SHA-256 hash-chained append-only logging. Every tool call, autonomy decision, an
 The orchestrator records actions automatically. For manual recording:
 
 ```typescript
-import { AuditTrail } from '@epic-ai/core';
+import { AuditTrail } from '@epicai/core';
 
 const audit = new AuditTrail({
   store: 'append-only-log',
@@ -717,7 +717,7 @@ for await (const event of agent.stream('Scan all domains for critical threats'))
 ### Rate Limiting
 
 ```typescript
-import { RateLimiter } from '@epic-ai/core';
+import { RateLimiter } from '@epicai/core';
 
 const limiter = new RateLimiter({
   global: { requestsPerSecond: 100, burst: 200 },
@@ -731,7 +731,7 @@ const { remaining, resetsInMs } = limiter.remaining('splunk');
 ### Error Classification and Retry
 
 ```typescript
-import { ErrorClassifier } from '@epic-ai/core';
+import { ErrorClassifier } from '@epicai/core';
 
 const result = await ErrorClassifier.withRetry(
   () => federation.callTool('splunk_search', { query: 'index=main' }),
@@ -748,7 +748,7 @@ Error categories:
 ### Graceful Shutdown
 
 ```typescript
-import { GracefulShutdown } from '@epic-ai/core';
+import { GracefulShutdown } from '@epicai/core';
 
 const shutdown = new GracefulShutdown();
 shutdown.register({ name: 'save-audit', fn: () => audit.flush(), timeoutMs: 5000 });
@@ -760,7 +760,7 @@ const unsubscribe = shutdown.registerSignalHandlers(() => process.exit(0));
 ### Crash Recovery
 
 ```typescript
-import { FileCheckpointStore } from '@epic-ai/core';
+import { FileCheckpointStore } from '@epicai/core';
 
 const checkpoint = new FileCheckpointStore('/var/lib/epic-ai/checkpoints');
 await checkpoint.save({ id: 'run-123', step: 5, context: { ... } });
@@ -772,7 +772,7 @@ const restored = await checkpoint.load('run-123');
 ### Prompt Cache
 
 ```typescript
-import { PromptCache } from '@epic-ai/core';
+import { PromptCache } from '@epicai/core';
 
 const cache = new PromptCache({ maxEntries: 1000, defaultTTLMs: 300000 });
 const prompt = await cache.getOrCompute('user-123-context', async () => {
@@ -789,7 +789,7 @@ Shared in-flight promises prevent thundering herd on cache miss. LRU eviction at
 ### Event Callbacks
 
 ```typescript
-import { ObservabilityEmitter } from '@epic-ai/core';
+import { ObservabilityEmitter } from '@epicai/core';
 
 const emitter = new ObservabilityEmitter();
 
@@ -813,7 +813,7 @@ emitter.onLog(ObservabilityEmitter.consoleLogger(['apiKey', 'token', 'password']
 ### Token and Cost Tracking
 
 ```typescript
-import { TokenTracker } from '@epic-ai/core';
+import { TokenTracker } from '@epicai/core';
 
 const tracker = new TokenTracker();
 tracker.record('openai', 'gpt-4.1', 'generator', { promptTokens: 1200, completionTokens: 340 });
@@ -825,7 +825,7 @@ const summary = tracker.summary();
 ### OpenTelemetry Integration
 
 ```typescript
-import { createOTelEventCallback, createOTelLogCallback } from '@epic-ai/core';
+import { createOTelEventCallback, createOTelLogCallback } from '@epicai/core';
 
 emitter.onEvent(createOTelEventCallback(spanExporter, traceId));
 emitter.onLog(createOTelLogCallback(logExporter));
@@ -853,7 +853,7 @@ The SDK ships 40+ pre-built cybersecurity vendor adapters spanning all 10 (ISC)�
 ### Using an Adapter
 
 ```typescript
-import { SplunkMCPServer } from '@epic-ai/core/mcp-servers/splunk';
+import { SplunkMCPServer } from '@epicai/core/mcp-servers/splunk';
 
 const splunk = new SplunkMCPServer({
   host: 'splunk.corp.example.com',
@@ -880,7 +880,7 @@ await federation.connect('splunk', {
 ### Custom MCP Server
 
 ```typescript
-import { type MCPAdapter, type Tool, type ToolResult } from '@epic-ai/core';
+import { type MCPAdapter, type Tool, type ToolResult } from '@epicai/core';
 
 class MySecurityTool implements MCPAdapter {
   readonly name = 'my-tool';
@@ -901,7 +901,7 @@ await federation.connect('my-tool', config, new MySecurityTool());
 ### Custom Vector Store
 
 ```typescript
-import type { VectorStoreAdapter, ScoredResult, IndexDocument, SearchOptions } from '@epic-ai/core';
+import type { VectorStoreAdapter, ScoredResult, IndexDocument, SearchOptions } from '@epicai/core';
 
 class MyVectorStore implements VectorStoreAdapter {
   async searchDense(query: string, options: SearchOptions): Promise<ScoredResult[]> { /* semantic */ }
@@ -914,7 +914,7 @@ class MyVectorStore implements VectorStoreAdapter {
 ### Custom Memory Store
 
 ```typescript
-import type { MemoryStoreAdapter } from '@epic-ai/core';
+import type { MemoryStoreAdapter } from '@epicai/core';
 
 class MyMemoryStore implements MemoryStoreAdapter {
   async save(userId, entry) { /* persist */ }
@@ -927,7 +927,7 @@ class MyMemoryStore implements MemoryStoreAdapter {
 ### Custom Audit Store
 
 ```typescript
-import type { AuditStoreAdapter } from '@epic-ai/core';
+import type { AuditStoreAdapter } from '@epicai/core';
 
 class MyAuditStore implements AuditStoreAdapter {
   async append(record) { /* atomic append */ }
@@ -949,7 +949,7 @@ npm run build         # TypeScript compile
 The SDK provides in-memory adapters for all extension points, enabling fully offline testing:
 
 ```typescript
-import { EpicAI } from '@epic-ai/core';
+import { EpicAI } from '@epicai/core';
 
 const agent = await EpicAI.create({
   orchestrator: { provider: 'custom', model: 'test', llm: mockLLM },

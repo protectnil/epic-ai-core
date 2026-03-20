@@ -29,7 +29,7 @@ Include:
 
 ## Scope
 
-This policy covers the `@epic-ai/core` npm package and its direct dependencies. It does not cover:
+This policy covers the `@epicai/core` npm package and its direct dependencies. It does not cover:
 
 - Third-party MCP servers connected via the federation layer
 - Customer-deployed orchestrator or generator models

@@ -25,7 +25,7 @@ To accurately identify Epic AI® products, it may be necessary to refer to them 
 Examples of permitted nominative fair uses:
 
 - "You can download the Epic AI® Core source code under the Apache License 2.0 at https://github.com/protectnil/epic-ai-core."
-- "Our product is compatible with @epic-ai/core."
+- "Our product is compatible with @epicai/core."
 - "I recommend Epic AI® Core for federated cybersecurity orchestration."
 
 Use of the Epic AI® name in any nominative context does not imply endorsement, sponsorship, or affiliation with protectNIL Inc.
