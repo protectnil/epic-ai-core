@@ -19,6 +19,7 @@ import type {
   Tool,
   PendingApproval,
   AutonomyPolicy,
+  LLMFunction,
 } from './types/index.js';
 import { FederationManager } from './federation/FederationManager.js';
 import { TieredAutonomy } from './autonomy/TieredAutonomy.js';
@@ -79,7 +80,7 @@ const GeneratorConfigSchema = z.object({
 });
 
 const FederationConfigSchema = z.object({
-  servers: z.array(ServerConnectionSchema).min(1),
+  servers: z.array(ServerConnectionSchema),
   retryPolicy: RetryPolicySchema.optional(),
   healthCheckIntervalMs: z.number().positive().optional(),
 });
@@ -296,13 +297,22 @@ class EpicAIAgentImpl implements EpicAIAgent {
 
     // Create the orchestrator with real LLM functions
     const orchestratorLLM = createOrchestratorLLM(this.config.orchestrator);
-    const generatorConfig = this.config.generator ?? {
-      provider: this.config.orchestrator.provider === 'ollama' ? 'ollama' as const : 'custom' as const,
-      model: this.config.orchestrator.model,
-      llm: this.config.orchestrator.llm,
-      baseUrl: this.config.orchestrator.baseUrl,
-    };
-    const generatorLLM = createGeneratorLLM(generatorConfig);
+
+    // Generator resolution: if no generator config provided, the orchestrator
+    // model is used for both routing AND synthesis. This only works reliably
+    // with Ollama (local model) — cloud providers require explicit generator config.
+    let generatorLLM: LLMFunction;
+    if (this.config.generator) {
+      generatorLLM = createGeneratorLLM(this.config.generator);
+    } else if (this.config.orchestrator.provider === 'ollama') {
+      // Ollama can serve both roles — reuse the orchestrator LLM for generation
+      generatorLLM = orchestratorLLM;
+    } else {
+      throw new Error(
+        'Generator config is required when orchestrator is not Ollama. ' +
+        'Provide a generator config or use provider: "ollama" for the orchestrator to handle both roles.'
+      );
+    }
 
     this.orchestrator = new Orchestrator({
       orchestratorLLM,

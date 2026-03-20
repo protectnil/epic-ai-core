@@ -5,6 +5,10 @@
  * Detects Ollama, pulls model, validates connection, generates config.
  * Built on the Epic AI Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0
+ *
+ * NOTE: This is a CLI tool — console.log/console.error are intentional
+ * as the user interface. This is the one exception to the Loki logging
+ * policy. SDK library code must never use console.log.
  */
 
 import { existsSync, writeFileSync } from 'node:fs';
