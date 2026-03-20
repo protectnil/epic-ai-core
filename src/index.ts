@@ -4,7 +4,7 @@
  * Copyright 2026 protectNIL Inc. Apache-2.0
  *
  * Epic AI is a registered trademark of protectNIL Inc.
- * U.S. Trademark Registration No. 7,371,952
+ * U.S. Trademark Registration No. 7,748,019
  */
 
 // Entrypoint
@@ -153,4 +153,12 @@ export type {
   TransportMode,
   StreamEvent,
   StreamEventType,
+  PlanEvent,
+  ActionEvent,
+  ApprovalNeededEvent,
+  ResultEvent,
+  NarrativeEvent,
+  MemoryEvent,
+  ErrorEvent,
+  DoneEvent,
 } from './types/index.js';
