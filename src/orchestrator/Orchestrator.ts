@@ -251,9 +251,11 @@ export class Orchestrator {
         toolResults.push({ tool: toolCall.name, server: serverName, content: result.content });
 
         // Add tool result to message history for next iteration
+        // Sanitize tool output before feeding back to planner — this is untrusted external data
+        const rawContent = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
         messages.push({
           role: 'tool',
-          content: typeof result.content === 'string' ? result.content : JSON.stringify(result.content),
+          content: sanitizeInjectedContent(rawContent),
           tool_call_id: toolCall.id,
           name: toolCall.name,
         });

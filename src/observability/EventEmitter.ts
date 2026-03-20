@@ -118,54 +118,67 @@ export class ObservabilityEmitter {
   }
 
   /**
-   * Convenience: create a console-based log callback.
+   * Create a stderr-based log callback for development/debugging.
    *
-   * WARNING: This logger outputs structured log data to stdout.
-   * Sensitive fields (e.g. tokens, passwords, secrets) in `entry.data` will be
-   * visible in logs. Use `redactKeys` to replace sensitive values with [REDACTED].
+   * Uses process.stderr (not stdout) to avoid polluting application output.
+   * Each log entry is written as a single JSON line for structured parsing.
    *
-   * @param redactKeys - Optional list of data keys whose values will be replaced
-   *   with "[REDACTED]" before logging. Applied shallowly to entry.data.
+   * @param redactKeys - Keys whose values will be recursively replaced
+   *   with "[REDACTED]" at any depth, including inside arrays and nested objects.
    */
   static consoleLogger(redactKeys?: string[]): LogCallback {
     const redactSet = redactKeys ? new Set(redactKeys) : null;
 
-    const seen = new WeakSet();
-    function deepRedact(obj: Record<string, unknown>, keys: Set<string>): Record<string, unknown> {
-      if (seen.has(obj)) return { '[circular]': true };
-      seen.add(obj);
-      const result: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(obj)) {
-        if (keys.has(k)) {
-          result[k] = '[REDACTED]';
-        } else if (Array.isArray(v)) {
-          result[k] = v.map(item =>
-            item && typeof item === 'object' && !(item instanceof Date)
-              ? deepRedact(item as Record<string, unknown>, keys)
-              : item,
-          );
-        } else if (v && typeof v === 'object' && !(v instanceof Date)) {
-          result[k] = deepRedact(v as Record<string, unknown>, keys);
-        } else {
-          result[k] = v;
-        }
-      }
-      return result;
-    }
-
     return (entry: LogEntry) => {
-      const prefix = `[${entry.timestamp.toISOString()}] [${entry.level.toUpperCase()}]${entry.layer ? ` [${entry.layer}]` : ''}`;
-
       let data = entry.data;
-      if (data && redactSet && redactSet.size > 0) {
-        data = deepRedact(data, redactSet);
+      if (data) {
+        // Always run through deepRedactObj — handles circular refs AND redaction.
+        // WeakSet scoped per-call to prevent cross-entry misclassification.
+        const seen = new WeakSet();
+        data = deepRedactObj(data, redactSet ?? new Set(), seen);
       }
 
-      if (data) {
-        console.log(`${prefix} ${entry.message}`, data);
-      } else {
-        console.log(`${prefix} ${entry.message}`);
-      }
+      const line = JSON.stringify({
+        ts: entry.timestamp.toISOString(),
+        level: entry.level,
+        layer: entry.layer,
+        msg: entry.message,
+        data,
+      });
+
+      process.stderr.write(line + '\n');
     };
   }
+}
+
+/**
+ * Recursively redact keys in an object tree.
+ * Handles nested objects, arrays, and circular references.
+ * WeakSet is passed per-call to avoid cross-entry state leakage.
+ */
+function deepRedactObj(
+  obj: Record<string, unknown>,
+  keys: Set<string>,
+  seen: WeakSet<object>,
+): Record<string, unknown> {
+  if (seen.has(obj)) return { _circular: true };
+  seen.add(obj);
+  const result: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (keys.has(k)) {
+      result[k] = '[REDACTED]';
+    } else if (Array.isArray(v)) {
+      result[k] = v.map(item => {
+        if (item && typeof item === 'object' && !(item instanceof Date)) {
+          return deepRedactObj(item as Record<string, unknown>, keys, seen);
+        }
+        return item;
+      });
+    } else if (v && typeof v === 'object' && !(v instanceof Date)) {
+      result[k] = deepRedactObj(v as Record<string, unknown>, keys, seen);
+    } else {
+      result[k] = v;
+    }
+  }
+  return result;
 }
