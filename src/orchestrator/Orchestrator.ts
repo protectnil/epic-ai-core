@@ -102,6 +102,8 @@ export class Orchestrator {
   private async *execute(query: string, userId?: string): AsyncGenerator<StreamEvent> {
     const priorActions: ActionRecord[] = [];
     const toolResults: { tool: string; server: string; content: unknown }[] = [];
+    const runPendingActionIds: Set<string> = new Set(); // track approvals created in THIS run
+    let completedIterations = 0;
 
     // 1. RETRIEVAL — inject context from hybrid search + persistent memory
     let retrievedContext = '';
@@ -157,12 +159,12 @@ export class Orchestrator {
     messages.push({ role: 'user', content: query });
 
     // ORCHESTRATOR LOOP
-    let iteration = 0;
-    for (; iteration < this.maxIterations; iteration++) {
+    for (let iteration = 0; iteration < this.maxIterations; iteration++) {
       const planResponse = await this.deps.orchestratorLLM({ messages, tools: toolDefs });
 
       // No tool calls — orchestrator decided to respond
       if (planResponse.toolCalls.length === 0) {
+        completedIterations++;
         break;
       }
 
@@ -196,6 +198,7 @@ export class Orchestrator {
         if (!decision.allowed) {
           // Approve-tier: queued for human
           pendingCount++;
+          runPendingActionIds.add(decision.id);
           yield {
             type: 'approval-needed',
             data: { actionId: decision.id, tool: toolCall.name, server: serverName, tier: decision.tier },
@@ -256,6 +259,8 @@ export class Orchestrator {
         });
       }
 
+      completedIterations++;
+
       // Stop the loop if there are pending approvals but no executed actions this iteration
       // (pendingCount > 0 AND executedCount === 0 means we're blocked on human approval)
       if (pendingCount > 0 && executedCount === 0) {
@@ -310,14 +315,13 @@ export class Orchestrator {
       };
     }
 
-    // 7. DONE
-    const pendingApprovals = await this.deps.autonomy.pending();
+    // 7. DONE — run-local telemetry only (not global queue state)
     yield {
       type: 'done',
       data: {
-        loopIterations: iteration,
+        loopIterations: completedIterations,
         actionsExecuted: toolResults.length,
-        actionsPending: pendingApprovals.length,
+        actionsPending: runPendingActionIds.size,
       },
       timestamp: new Date(),
     };

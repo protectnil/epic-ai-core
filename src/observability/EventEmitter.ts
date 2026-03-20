@@ -130,12 +130,21 @@ export class ObservabilityEmitter {
   static consoleLogger(redactKeys?: string[]): LogCallback {
     const redactSet = redactKeys ? new Set(redactKeys) : null;
 
+    const seen = new WeakSet();
     function deepRedact(obj: Record<string, unknown>, keys: Set<string>): Record<string, unknown> {
+      if (seen.has(obj)) return { '[circular]': true };
+      seen.add(obj);
       const result: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(obj)) {
         if (keys.has(k)) {
           result[k] = '[REDACTED]';
-        } else if (v && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {
+        } else if (Array.isArray(v)) {
+          result[k] = v.map(item =>
+            item && typeof item === 'object' && !(item instanceof Date)
+              ? deepRedact(item as Record<string, unknown>, keys)
+              : item,
+          );
+        } else if (v && typeof v === 'object' && !(v instanceof Date)) {
           result[k] = deepRedact(v as Record<string, unknown>, keys);
         } else {
           result[k] = v;

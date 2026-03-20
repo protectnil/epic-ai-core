@@ -289,23 +289,13 @@ class EpicAIAgentImpl implements EpicAIAgent {
       throw new Error('Agent already started');
     }
 
-    // Connect to all MCP servers
-    await this.federationManager.connectAll();
-
-    // Initialize audit trail (restore chain state from persistent adapter)
-    await this.auditTrail.init();
-
-    // Create the orchestrator with real LLM functions
+    // VALIDATE FIRST — no side effects until config is proven valid
     const orchestratorLLM = createOrchestratorLLM(this.config.orchestrator);
 
-    // Generator resolution: if no generator config provided, the orchestrator
-    // model is used for both routing AND synthesis. This only works reliably
-    // with Ollama (local model) — cloud providers require explicit generator config.
     let generatorLLM: LLMFunction;
     if (this.config.generator) {
       generatorLLM = createGeneratorLLM(this.config.generator);
     } else if (this.config.orchestrator.provider === 'ollama') {
-      // Ollama can serve both roles — reuse the orchestrator LLM for generation
       generatorLLM = orchestratorLLM;
     } else {
       throw new Error(
@@ -313,6 +303,10 @@ class EpicAIAgentImpl implements EpicAIAgent {
         'Provide a generator config or use provider: "ollama" for the orchestrator to handle both roles.'
       );
     }
+
+    // SIDE EFFECTS — only after validation passes
+    await this.federationManager.connectAll();
+    await this.auditTrail.init();
 
     this.orchestrator = new Orchestrator({
       orchestratorLLM,
