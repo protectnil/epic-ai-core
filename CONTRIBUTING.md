@@ -70,7 +70,7 @@ Use [GitHub Issues](https://github.com/protectnil/epic-ai-core/issues). Include:
 
 ## Trademark Notice
 
-Epic AI® is a registered trademark of protectNIL Inc. (Reg. No. 7371952). Use of the Epic AI name in derivative works requires compliance with the [Apache 2.0 license](./LICENSE) trademark provisions.
+Epic AI® is a registered trademark of protectNIL Inc. (Reg. No. 7,748,019). Use of the Epic AI® name in derivative works requires compliance with the [Trademark Policy](./TRADEMARK.md).
 
 ## License
 

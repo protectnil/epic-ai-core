@@ -5,6 +5,8 @@
 **License:** Apache 2.0
 **Runtime:** Node.js >= 20.0.0, TypeScript 5.3+
 
+Epic AI® Core is an Intelligent Virtual Assistant (IVA) framework for cybersecurity that federates across multiple MCP servers while keeping all tool schemas and security data on your infrastructure. This guide covers every layer of the SDK.
+
 ---
 
 ## Table of Contents
@@ -114,6 +116,16 @@ User Query
 The orchestrator (local SLM) handles all tool selection and invocation. The generator (cloud LLM) only sees retrieved results and produces the response. Tool schemas, MCP server topology, and intermediate tool outputs never reach the cloud.
 
 ### Architecture Notes
+
+#### Data Sovereignty
+
+The orchestrator/generator split is a security architecture, not just a performance optimization. The local SLM (orchestrator) holds all tool schemas, MCP server connection details, and intermediate tool results. The cloud LLM (generator) receives only sanitized, curated context for response synthesis. This means:
+
+- Tool definitions never transit a third-party API
+- MCP server connection details (URLs, auth tokens, internal hostnames) stay local
+- Raw security telemetry from vendor platforms (Splunk queries, CrowdStrike detections, Vault secrets) is processed locally and only summarized results reach the generator
+
+For fully air-gapped deployments, set the generator to `provider: 'ollama'` and both the orchestrator and generator run locally with zero external network calls.
 
 #### Generator Fallback
 
@@ -816,18 +828,20 @@ emitter.onLog(createOTelLogCallback(logExporter));
 
 ## MCP Server Adapters
 
-The SDK ships 40+ pre-built cybersecurity vendor adapters. Each implements `MCPAdapter` and handles authentication, request formatting, and response normalization.
+The SDK ships 40+ pre-built cybersecurity vendor adapters spanning all 10 (ISC)² security domains. Each implements `MCPAdapter` and handles authentication, request formatting, and response normalization.
 
-| Category | Adapters |
-|----------|----------|
-| EDR / XDR | CrowdStrike Falcon, CrowdStrike Identity, Carbon Black, SentinelOne, Cybereason, Sophos, Trend Micro |
-| SIEM / Analytics | Splunk, IBM QRadar, Microsoft Sentinel, Sumo Logic, LogRhythm, Datadog Security |
-| Threat Intelligence | Recorded Future, ThreatConnect, Anomali, Mandiant |
-| Network Security | Palo Alto Networks, Fortinet, Check Point, Cisco Secure, Zscaler, Barracuda, Darktrace |
-| Vulnerability Mgmt | Tenable, Qualys, Rapid7, Orca, Lacework, Wiz, Prisma Cloud |
-| Identity & Access | CyberArk, BeyondTrust, Delinea, Ping Identity |
-| GRC / Compliance | ServiceNow GRC, OneTrust, Drata |
-| Email Security | Proofpoint, Mimecast |
+| (ISC)² Domain | Category | Adapters |
+|---------------|----------|----------|
+| Security Management | GRC / Compliance | ServiceNow GRC, OneTrust, Drata |
+| Access Control | Identity & Access | CyberArk, BeyondTrust, Delinea, Ping Identity |
+| Telecom & Network Security | Network Security | Palo Alto Networks, Fortinet, Check Point, Cisco Secure, Zscaler, Barracuda, Darktrace |
+| Cryptography | Key Management | *(via Vault MCP adapter in federation config)* |
+| Security Architecture | Vulnerability Mgmt | Tenable, Qualys, Rapid7, Orca, Lacework, Wiz, Prisma Cloud |
+| Operations Security | SIEM / Analytics | Splunk, IBM QRadar, Microsoft Sentinel, Sumo Logic, LogRhythm, Datadog Security |
+| Application Security | EDR / XDR | CrowdStrike Falcon, CrowdStrike Identity, Carbon Black, SentinelOne, Cybereason, Sophos, Trend Micro |
+| Physical Security | *(federated via Seam/Brivo adapters in Praetor)* | — |
+| Business Continuity | *(federated via Commvault/Veeam adapters in Praetor)* | — |
+| Law & Ethics | Threat Intel / Email | Recorded Future, ThreatConnect, Anomali, Mandiant, Proofpoint, Mimecast |
 
 ### Using an Adapter
 

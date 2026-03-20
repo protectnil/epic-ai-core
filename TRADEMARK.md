@@ -14,7 +14,7 @@ This trademark policy governs only the use of the Epic AI® name, logos, and ass
 
 ## Trademarks Covered
 
-- **Epic AI®** — U.S. Trademark Registration No. 7,371,952
+- **Epic AI®** — U.S. Trademark Registration No. 7,748,019 (Class 42: SaaS featuring AI for use as an Intelligent Virtual Assistant)
 - The Epic AI hexagon device mark and logo
 - Associated trade dress, stylizations, and visual brand elements
 
@@ -69,4 +69,4 @@ Nothing in this policy shall be deemed to grant any license, or to allow any thi
 
 ---
 
-*Epic AI® is a registered trademark of protectNIL Inc. (U.S. Reg. No. 7,371,952). All other trademarks are the property of their respective owners.*
+*Epic AI® is a registered trademark of protectNIL Inc. (U.S. Reg. No. 7,748,019). All other trademarks are the property of their respective owners.*

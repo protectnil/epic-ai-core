@@ -7,9 +7,9 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
 
-**Epic AI®** is an open source TypeScript SDK for building AI agents that federate across multiple Model Context Protocol (MCP) servers with tiered autonomy governance, hybrid retrieval, persistent memory, persona routing, and tamper-evident audit trails.
+**Epic AI®** is an open source TypeScript SDK for building Intelligent Virtual Assistants (IVA) that federate across multiple Model Context Protocol (MCP) servers with tiered autonomy governance, hybrid retrieval, persistent memory, persona routing, and tamper-evident audit trails. Tool schemas and security data never leave your infrastructure — the local SLM routes tools, the cloud LLM writes the response.
 
-Built by [protectNIL Inc.](https://protectnil.com) — Epic AI® is a registered trademark (U.S. Reg. No. 7,371,952).
+Built by [protectNIL Inc.](https://protectnil.com) — Epic AI® is a registered trademark (U.S. Reg. No. 7,748,019).
 
 ---
 
@@ -23,6 +23,9 @@ Static system-prompt guardrails break under adversarial input. Epic AI® impleme
 
 **3. Compliance requires provenance, not just logging.**
 Append-only logs are not audit trails. Epic AI® writes every agent action to a SHA-256 hash-chained record that makes tampering detectable across any sequence of events, with export to JSON, CSV, and syslog formats.
+
+**4. Security data stays on your infrastructure — by design.**
+Every MCP tool schema, every intermediate tool result, and every routing decision stays on your local SLM. The cloud LLM receives only curated, sanitized context for response synthesis. Your security telemetry, vendor topology, and threat data never transit a third-party API.
 
 ---
 
@@ -292,7 +295,9 @@ await audit.export('syslog');  // emits to syslog
 
 ## 40 Cybersecurity MCP Server Adapters
 
-Epic AI® ships pre-built adapters for 40 enterprise cybersecurity platforms. Each adapter implements the `MCPAdapter` interface and handles authentication, request formatting, and response normalization for its respective platform.
+Epic AI® ships pre-built adapters spanning all 10 (ISC)² security domains: Security Management, Access Control, Telecom & Network Security, Cryptography, Security Architecture, Operations Security, Application Security, Physical Security, Business Continuity, and Law & Ethics.
+
+Each adapter implements the `MCPAdapter` interface and handles authentication, request formatting, and response normalization for its respective platform.
 
 | Category              | Adapters                                                                                     |
 |-----------------------|----------------------------------------------------------------------------------------------|
@@ -495,12 +500,12 @@ You may not use this software except in compliance with the License. A copy of t
 
 ## Trademark Notice
 
-**Epic AI®** is a registered trademark of protectNIL Inc., U.S. Trademark Registration No. 7,371,952. Use of the Epic AI® name and mark in connection with software, services, or documentation is subject to the trademark policies of protectNIL Inc.
+**Epic AI®** is a registered trademark of protectNIL Inc., U.S. Trademark Registration No. 7,748,019. Use of the Epic AI® name and mark in connection with software, services, or documentation is subject to the trademark policies of protectNIL Inc.
 
-The `@epic-ai/core` npm package and this repository are official specimens of use of the Epic AI® mark in commerce in connection with downloadable computer software for artificial intelligence agent orchestration.
+The `@epic-ai/core` npm package and this repository are official specimens of use of the Epic AI® mark in commerce in connection with downloadable computer software featuring an Intelligent Virtual Assistant (IVA) for cybersecurity, utilizing natural language processing (NLP), natural language understanding (NLU), machine learning, and generative and conversational AI to access and process third-party security sources of information across all 10 (ISC)² security domains.
 
 All other trademarks, service marks, and product names referenced in this document are the property of their respective owners. CrowdStrike, Splunk, Palo Alto Networks, Microsoft Sentinel, IBM QRadar, and all other third-party names are used solely to identify compatible integrations and are not affiliated with or endorsed by protectNIL Inc.
 
 ---
 
-*Epic AI® — Zero LLM Context MCP Orchestrator | Built by [protectNIL Inc.](https://protectnil.com)*
+*Epic AI® — Intelligent Virtual Assistant (IVA) for Cybersecurity | Zero LLM Context MCP Orchestrator | Built by [protectNIL Inc.](https://protectnil.com)*
