@@ -187,7 +187,7 @@ The orchestrator (local SLM) handles all tool selection and invocation. The gene
   approvalQueue?: {
     persistence: 'memory' | 'redis';
     ttlMs: number;
-    onExpire: 'deny' | 'escalate';
+    onExpire: 'deny' | 'escalate-to-admin';
     redis?: { host: string; port: number };
   };
 }
@@ -267,16 +267,27 @@ federation.onHealthChange((h) => {
 Implement this to connect any custom MCP server:
 
 ```typescript
-interface MCPAdapter {
-  readonly name: string;
-  readonly status: 'disconnected' | 'connecting' | 'connected' | 'error';
-  connect(): Promise<void>;
-  disconnect(): Promise<void>;
-  listTools(): Promise<Tool[]>;
-  callTool(name: string, args: Record<string, unknown>): Promise<ToolResult>;
-  ping(): Promise<number>;
+import { FederationManager, type MCPAdapter } from '@epic-ai/core';
+
+class MyCustomAdapter implements MCPAdapter {
+  readonly name = 'my-server';
+  status: 'disconnected' | 'connecting' | 'connected' | 'error' = 'disconnected';
+
+  async connect(): Promise<void> { /* negotiate transport */ }
+  async disconnect(): Promise<void> { /* cleanup */ }
+  async listTools(): Promise<Tool[]> { /* return tool definitions */ }
+  async callTool(name: string, args: Record<string, unknown>): Promise<ToolResult> { /* invoke */ }
+  async ping(): Promise<number> { /* return latency ms */ }
 }
+
+// Pass an instance directly
+await federation.connect('my-server', config, new MyCustomAdapter());
+
+// Or pass a factory function
+await federation.connect('my-server', config, (cfg) => new MyCustomAdapter(cfg));
 ```
+
+If no adapter is provided, `ConnectionPool` defaults to `MCPClientAdapter` (the built-in MCP protocol client).
 
 ---
 
@@ -475,9 +486,9 @@ Importance-weighted persistent memory with access-frequency auto-promotion.
 ### Storing Memories
 
 ```typescript
-import { PersistentMemory } from '@epic-ai/core';
+import { PersistentMemory, InMemoryStore } from '@epic-ai/core';
 
-const memory = new PersistentMemory({ store: new InMemoryStore() });
+const memory = new PersistentMemory({ store: new InMemoryStore(), cacheTTLMs: 300000 });
 
 await memory.etch('user-123', {
   type: 'threat-finding',
@@ -632,14 +643,14 @@ for await (const event of agent.stream('Scan all domains for critical threats'))
 
 | Type | Data | Description |
 |------|------|-------------|
-| `plan` | `{ toolCalls }` | Orchestrator selected tools |
-| `action` | `{ tool, server, tier, durationMs }` | Tool executed |
-| `approval-needed` | `{ actionId, tool, server }` | Action blocked, needs human approval |
-| `result` | `{ tool, server, content }` | Tool returned data |
-| `memory` | `{ userId, type }` | Memory etched |
+| `plan` | `{ iteration, toolCalls: string[] }` | Orchestrator selected tools for this iteration |
+| `action` | `{ tool, server, durationMs }` | Tool executed |
+| `approval-needed` | `{ actionId, tool, server, tier }` | Action blocked, needs human approval |
+| `result` | `{ tool, content, isError }` | Tool returned data |
+| `memory` | `{ etched: boolean, findingsCount }` | Memory etched after tool execution |
 | `narrative` | `{ text }` | Generator produced text |
 | `error` | `{ message }` | Error occurred |
-| `done` | `{ actionsExecuted, actionsPending, durationMs }` | Loop complete |
+| `done` | `{ iterations, actionsExecuted, actionsPending }` | Loop complete |
 
 ---
 
@@ -797,7 +808,7 @@ await federation.connect('splunk', {
 ### Custom MCP Server
 
 ```typescript
-import type { MCPAdapter, Tool, ToolResult } from '@epic-ai/core';
+import { type MCPAdapter, type Tool, type ToolResult } from '@epic-ai/core';
 
 class MySecurityTool implements MCPAdapter {
   readonly name = 'my-tool';
@@ -809,6 +820,9 @@ class MySecurityTool implements MCPAdapter {
   async callTool(name: string, args: Record<string, unknown>): Promise<ToolResult> { /* invoke */ }
   async ping(): Promise<number> { /* return latency ms */ }
 }
+
+// Register with the federation
+await federation.connect('my-tool', serverConfig, new MySecurityTool());
 ```
 
 ### Custom Vector Store
