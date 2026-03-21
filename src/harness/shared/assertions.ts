@@ -209,13 +209,20 @@ const TESTS: TestCase[] = [
   },
 ];
 
-export async function runAssertions(backend: HarnessBackend): Promise<AssertionResult[]> {
+export async function runAssertions(backend: HarnessBackend, perToolTimeoutMs?: number): Promise<AssertionResult[]> {
   const results: AssertionResult[] = [];
+  const timeout = perToolTimeoutMs ?? 10_000;
 
   for (const test of TESTS) {
     const start = Date.now();
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      await test.fn(backend);
+      await Promise.race([
+        test.fn(backend),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`Assertion "${test.name}" exceeded ${timeout}ms per-tool timeout`)), timeout);
+        }),
+      ]);
       results.push({ name: test.name, passed: true, durationMs: Date.now() - start });
     } catch (err) {
       results.push({
@@ -224,6 +231,8 @@ export async function runAssertions(backend: HarnessBackend): Promise<AssertionR
         error: err instanceof Error ? err.message : String(err),
         durationMs: Date.now() - start,
       });
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
     }
   }
 

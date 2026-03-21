@@ -64,8 +64,12 @@ function createMockLLM(behavior: 'echo' | 'approval' | 'multi-step' | 'passthrou
   };
 }
 
-// The harness STDIO server script path (compiled)
-const HARNESS_STDIO_SCRIPT = new URL('../../dist/harness/stdio/process.js', import.meta.url).pathname;
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Resolve to dist/ — pretest ensures it's built before tests run
+const __testDir = dirname(fileURLToPath(import.meta.url));
+const HARNESS_STDIO_SCRIPT = resolve(__testDir, '..', '..', 'dist', 'harness', 'stdio', 'process.js');
 
 describe('Orchestrator Integration with Harness', { timeout: 30_000 }, () => {
 

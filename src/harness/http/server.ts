@@ -16,10 +16,11 @@ import { HarnessProfile, type HarnessBackend, type HarnessToolResult, type ToolI
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function resolveProcessScript(dir: string): string {
-  const distPath = resolve(dir, '..', '..', '..', 'dist', 'harness', 'http', 'process.js');
-  const localPath = resolve(dir, 'process.js');
-  if (dir.includes('/src/')) return distPath;
-  return localPath;
+  // Always resolve to the project root's dist/ directory.
+  // Child processes must run compiled JS regardless of whether the parent is src/ or dist/.
+  // pretest script ensures dist/ is up to date before tests run.
+  const projectRoot = resolve(dir, '..', '..', '..');
+  return resolve(projectRoot, 'dist', 'harness', 'http', 'process.js');
 }
 
 export class HttpHarnessBackend implements HarnessBackend {

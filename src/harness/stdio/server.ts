@@ -14,12 +14,11 @@ import { HarnessProfile, type HarnessBackend, type HarnessToolResult, type ToolI
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function resolveProcessScript(dir: string): string {
-  // Works whether running from src/ (vitest) or dist/ (compiled)
-  const distPath = resolve(dir, '..', '..', '..', 'dist', 'harness', 'stdio', 'process.js');
-  const localPath = resolve(dir, 'process.js');
-  // Prefer dist/ if running from src/ (vitest uses ts source, but child process needs compiled JS)
-  if (dir.includes('/src/')) return distPath;
-  return localPath;
+  // Always resolve to the project root's dist/ directory.
+  // Child processes must run compiled JS regardless of whether the parent is src/ or dist/.
+  // pretest script ensures dist/ is up to date before tests run.
+  const projectRoot = resolve(dir, '..', '..', '..');
+  return resolve(projectRoot, 'dist', 'harness', 'stdio', 'process.js');
 }
 
 export class StdioHarnessBackend implements HarnessBackend {

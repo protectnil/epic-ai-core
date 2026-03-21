@@ -1,6 +1,7 @@
 /**
  * @epicai/core — Test Harness Runner
  * Runs the shared assertion suite against any configured backend.
+ * Enforces per-scenario timeout via AbortController.
  * Built on the Epic AI® Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0
  */
@@ -47,26 +48,18 @@ export class HarnessRunner {
   async runProfile(profile: HarnessProfile): Promise<HarnessReport> {
     const backend = createBackend(profile);
     const start = Date.now();
+    const scenarioTimeout = this.config.timeouts.perScenario;
 
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      await backend.start();
-
-      const healthy = await backend.healthCheck();
-      if (!healthy) {
-        return {
-          profile,
-          passed: 0,
-          failed: 1,
-          results: [{ name: 'healthCheck', passed: false, error: 'Backend failed health check after start', durationMs: Date.now() - start }],
-          durationMs: Date.now() - start,
-        };
-      }
-
-      const results = await runAssertions(backend);
-      const passed = results.filter(r => r.passed).length;
-      const failed = results.filter(r => !r.passed).length;
-
-      return { profile, passed, failed, results, durationMs: Date.now() - start };
+      // Enforce per-scenario timeout on the entire profile run
+      const result = await Promise.race([
+        this.executeProfile(backend, profile, start),
+        new Promise<HarnessReport>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`Profile ${profile} exceeded ${scenarioTimeout}ms scenario timeout`)), scenarioTimeout);
+        }),
+      ]);
+      return result;
     } catch (err) {
       return {
         profile,
@@ -81,11 +74,33 @@ export class HarnessRunner {
         durationMs: Date.now() - start,
       };
     } finally {
+      if (timer !== undefined) clearTimeout(timer);
       try {
         await backend.stop();
       } catch {
         // Best-effort cleanup
       }
     }
+  }
+
+  private async executeProfile(backend: HarnessBackend, profile: HarnessProfile, start: number): Promise<HarnessReport> {
+    await backend.start();
+
+    const healthy = await backend.healthCheck();
+    if (!healthy) {
+      return {
+        profile,
+        passed: 0,
+        failed: 1,
+        results: [{ name: 'healthCheck', passed: false, error: 'Backend failed health check after start', durationMs: Date.now() - start }],
+        durationMs: Date.now() - start,
+      };
+    }
+
+    const results = await runAssertions(backend, this.config.timeouts.perTool);
+    const passed = results.filter(r => r.passed).length;
+    const failed = results.filter(r => !r.passed).length;
+
+    return { profile, passed, failed, results, durationMs: Date.now() - start };
   }
 }
