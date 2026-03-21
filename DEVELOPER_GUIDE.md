@@ -812,6 +812,23 @@ emitter.onLog(ObservabilityEmitter.consoleLogger(['apiKey', 'token', 'password']
 
 `ObservabilityEmitter.consoleLogger()` writes structured JSON to `stderr` (not `stdout`) to avoid polluting application output. It is intended for local development and debugging — production deployments should use a dedicated logging callback.
 
+### GPU Verification Checklist
+
+For CPU and GPU verification runs, capture the following in a single run ID:
+
+- Run lifecycle: `runId`, start time, end time, duration, success/failure.
+- Stream steps: `plan`, `action`, `approval-needed`, `result`, `memory`, `narrative`, `error`, `done`.
+- Tool execution: tool name, adapter/server, input size, output size, duration, retries, timeout hits, and cancellation/abort reason.
+- Token usage: prompt tokens, completion tokens, total tokens, and token counts by role (`orchestrator`, `generator`, retrieval/memory if tracked separately).
+- Throughput: tokens/sec per model call and per run.
+- Rate limiting: provider throttles, retry-after values, backoff count, and failed retry attempts.
+- Redaction/safety: whether prompt/tool output was sanitized and whether sensitive keys were removed.
+- Transport: `stdio`, `http`, or `api`, plus connection setup time and disconnect reason.
+- Audit: record count, hash-chain state, and export target.
+- Logging: structured log path, Loki push success/failure, and any dropped log batches.
+
+Use `RunTelemetryCollector` for a readable per-run summary, `TokenTracker` for token/cost accounting, and `ObservabilityEmitter` for structured events/logs. Loki is the sink, not the summary.
+
 ### Run Telemetry Summary
 
 When you need a single human-readable snapshot of one agent run, attach a `RunTelemetryCollector` to the same event/log stream:
