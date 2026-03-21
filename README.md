@@ -9,7 +9,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
 
-**Epic AI®** is an open source TypeScript SDK for building Intelligent Virtual Assistants (IVA) that federate across multiple Model Context Protocol (MCP) servers with tiered autonomy governance, hybrid retrieval, persistent memory, persona routing, and tamper-evident audit trails — spanning all 10 (ISC)² security domains. Tool schemas and security data never leave your infrastructure — the local SLM routes tools, the cloud LLM writes the response.
+**Epic AI®** is an open source TypeScript SDK for building Intelligent Virtual Assistants (IVA) that federate across multiple Model Context Protocol (MCP) servers with tiered autonomy governance, hybrid retrieval, persistent memory, persona routing, and tamper-evident audit trails — spanning all 10 (ISC)² security domains. The SDK's orchestrator/generator architecture keeps tool schemas, MCP server topology, and intermediate tool results on your local SLM — only curated context reaches the cloud LLM for response synthesis.
 
 Built by [protectNIL Inc.](https://protectnil.com) — Epic AI® is a registered trademark (U.S. Reg. No. 7,748,019).
 
@@ -440,9 +440,7 @@ for await (const event of agent.stream('Identify all endpoints with active C2 be
 
 ## API Reference
 
-Full TypeScript API documentation is available at [https://github.com/protectnil/epic-ai-core/tree/master/docs/api](https://github.com/protectnil/epic-ai-core/tree/master/docs/api).
-
-All public types are exported from `@epicai/core` and are fully documented with JSDoc. The package ships declaration files (`.d.ts`) alongside all compiled modules.
+All public types are exported from `@epicai/core` and are fully documented with JSDoc. The package ships declaration files (`.d.ts`) alongside all compiled modules. See the [Developer Guide](DEVELOPER_GUIDE.md) for comprehensive documentation of every layer, configuration option, and adapter interface.
 
 ### Primary Exports
 
@@ -486,7 +484,7 @@ npm test
 3. New public APIs must include JSDoc documentation and TypeScript types
 4. New MCP server adapters must implement `MCPAdapter` and include tests
 
-**Reporting security vulnerabilities:** Do not open public issues for security vulnerabilities. Email [security@protectnil.com](mailto:security@protectnil.com).
+**Reporting security vulnerabilities:** Do not open public issues for security vulnerabilities. Email [security@epic-ai.io](mailto:security@epic-ai.io).
 
 ---
 

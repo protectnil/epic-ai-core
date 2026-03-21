@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## 0.1.2 — 2026-03-21
+
+### Added
+- Package renamed from `@epic-ai/core` to `@epicai/core`
+- StreamEvent discriminated union with typed interfaces exported from package root
+- CHANGELOG.md
+- Three runnable examples: basic-agent, cybersecurity-briefing, multi-persona
+- Deterministic test harness with stdio, HTTP, and API profiles
+
+### Fixed
+- durationMs semantics aligned between Orchestrator.run() and JSONResponse.collect()
+- ConnectionPool retry creates fresh adapter per attempt (no state leakage)
+- sanitizeKeys handles nested objects, arrays, and circular references
+- Security contact standardized to security@epic-ai.io across all docs
+
+---
+
 ## 0.1.1 — 2026-03-20
 
 ### Added

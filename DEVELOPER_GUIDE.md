@@ -1,11 +1,11 @@
 # Epic AI® Core — Developer Guide
 
 **SDK:** `@epicai/core`
-**Version:** 0.1.0
+**Version:** 0.1.2
 **License:** Apache 2.0
 **Runtime:** Node.js >= 20.0.0, TypeScript 5.3+
 
-Epic AI® Core is an Intelligent Virtual Assistant (IVA) framework for cybersecurity that federates across multiple MCP servers while keeping all tool schemas and security data on your infrastructure. This guide covers every layer of the SDK.
+Epic AI® Core is an Intelligent Virtual Assistant (IVA) framework for cybersecurity that federates across multiple MCP servers. The SDK's orchestrator/generator architecture keeps tool schemas, MCP server topology, and intermediate tool results on your local SLM — only curated context reaches the cloud LLM. Custom adapters and application-level code operate outside this boundary. This guide covers every layer of the SDK.
 
 ---
 
@@ -595,6 +595,8 @@ Built-in adapters: `InMemoryStore` (testing), `RedisMongoAdapter` (production �
 
 SHA-256 hash-chained append-only logging. Every tool call, autonomy decision, and approval event is recorded with tamper-evident integrity.
 
+**Important distinction:** The audit trail is tamper-**evident**, not tamper-**proof**. `HashChain.verifyChain()` detects if any record in the stored chain has been modified or deleted. However, it cannot prevent an attacker with file-system access from rewriting the entire chain with recomputed hashes. For tamper-proof guarantees, replicate audit records to an external immutable store (e.g., AWS QLDB, blockchain anchoring, or a remote syslog with write-once storage).
+
 ### Recording
 
 The orchestrator records actions automatically. For manual recording:
@@ -846,8 +848,8 @@ The SDK ships 40+ pre-built cybersecurity vendor adapters spanning all 10 (ISC)�
 | Security Architecture | Vulnerability Mgmt | Tenable, Qualys, Rapid7, Orca, Lacework, Wiz, Prisma Cloud |
 | Operations Security | SIEM / Analytics | Splunk, IBM QRadar, Microsoft Sentinel, Sumo Logic, LogRhythm, Datadog Security |
 | Application Security | EDR / XDR | CrowdStrike Falcon, CrowdStrike Identity, Carbon Black, SentinelOne, Cybereason, Sophos, Trend Micro |
-| Physical Security | *(federated via Seam/Brivo adapters in Praetor)* | — |
-| Business Continuity | *(federated via Commvault/Veeam adapters in Praetor)* | — |
+| Physical Security | Physical Access | *(bring your own adapter — see [Writing Custom Adapters](#writing-custom-adapters))* |
+| Business Continuity | DR / Backup | *(bring your own adapter — see [Writing Custom Adapters](#writing-custom-adapters))* |
 | Law & Ethics | Threat Intel / Email | Recorded Future, ThreatConnect, Anomali, Mandiant, Proofpoint, Mimecast |
 
 ### Using an Adapter
