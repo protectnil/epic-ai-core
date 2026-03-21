@@ -14,6 +14,7 @@ import type {
   StreamEvent,
   ActionContext,
   ActionRecord,
+  RunTiming,
 } from '../types/index.js';
 import type { FederationManager } from '../federation/FederationManager.js';
 import type { TieredAutonomy } from '../autonomy/TieredAutonomy.js';
@@ -123,8 +124,18 @@ export class Orchestrator {
     const runPendingActionIds: Set<string> = new Set(); // track approvals created in THIS run
     let completedIterations = 0;
 
+    // Micro-step timing accumulators
+    const runStart = Date.now();
+    let retrievalMs = 0;
+    let orchestratorMs = 0;
+    let federationMs = 0;
+    let autonomyMs = 0;
+    let generatorMs = 0;
+    let memoryMs = 0;
+
     // 1. RETRIEVAL — inject context from hybrid search + persistent memory
     let retrievedContext = '';
+    const retrievalStart = Date.now();
     if (this.deps.retriever) {
       try {
         const results = await this.deps.retriever.search(query, { maxResults: 5 });
@@ -150,6 +161,7 @@ export class Orchestrator {
         // Memory failure is non-fatal
       }
     }
+    retrievalMs = Date.now() - retrievalStart;
 
     // 2. BUILD SYSTEM PROMPT via persona
     const systemPrompt = this.deps.persona.buildSystemPrompt();
@@ -178,7 +190,10 @@ export class Orchestrator {
 
     // ORCHESTRATOR LOOP
     for (let iteration = 0; iteration < this.maxIterations; iteration++) {
+      const planStart = Date.now();
       const planResponse = await this.deps.orchestratorLLM({ messages, tools: toolDefs });
+      const planDurationMs = Date.now() - planStart;
+      orchestratorMs += planDurationMs;
 
       // No tool calls — orchestrator decided to respond
       if (planResponse.toolCalls.length === 0) {
@@ -188,7 +203,7 @@ export class Orchestrator {
 
       yield {
         type: 'plan',
-        data: { iteration, toolCalls: planResponse.toolCalls.map(tc => tc.name) },
+        data: { iteration, toolCalls: planResponse.toolCalls.map(tc => tc.name), durationMs: planDurationMs },
         timestamp: new Date(),
       };
 
@@ -211,7 +226,10 @@ export class Orchestrator {
           priorActions,
         };
 
+        const autonomyStart = Date.now();
         const decision = await this.deps.autonomy.evaluate(actionContext);
+        const autonomyDurationMs = Date.now() - autonomyStart;
+        autonomyMs += autonomyDurationMs;
 
         if (!decision.allowed) {
           // Approve-tier: queued for human
@@ -219,7 +237,7 @@ export class Orchestrator {
           runPendingActionIds.add(decision.id);
           yield {
             type: 'approval-needed',
-            data: { actionId: decision.id, tool: toolCall.name, server: serverName, tier: decision.tier },
+            data: { actionId: decision.id, tool: toolCall.name, server: serverName, tier: decision.tier, durationMs: autonomyDurationMs },
             timestamp: new Date(),
           };
 
@@ -234,8 +252,9 @@ export class Orchestrator {
         executedCount++;
 
         // FEDERATION — execute the tool call
-        const startTime = Date.now();
+        const toolStart = Date.now();
         const result = await this.deps.federation.callTool(toolCall.name, toolCall.arguments);
+        federationMs += Date.now() - toolStart;
 
         yield {
           type: 'action',
@@ -261,7 +280,7 @@ export class Orchestrator {
             : { raw: result.content },
           persona: this.deps.persona.active().name,
           approvedBy: decision.approvedBy,
-          durationMs: Date.now() - startTime,
+          durationMs: Date.now() - toolStart,
           timestamp: new Date(),
         });
 
@@ -291,6 +310,7 @@ export class Orchestrator {
 
     // 5. MEMORY — etch important findings
     if (this.deps.memory && userId && toolResults.length > 0) {
+      const memoryStart = Date.now();
       try {
         await this.deps.memory.etch(userId, {
           type: 'session-findings',
@@ -298,12 +318,16 @@ export class Orchestrator {
           importance: 'normal',
         });
 
+        const memoryDurationMs = Date.now() - memoryStart;
+        memoryMs += memoryDurationMs;
+
         yield {
           type: 'memory',
-          data: { etched: true, findingsCount: toolResults.length },
+          data: { etched: true, findingsCount: toolResults.length, durationMs: memoryDurationMs },
           timestamp: new Date(),
         };
       } catch {
+        memoryMs += Date.now() - memoryStart;
         // Memory etch failure is non-fatal
       }
     }
@@ -326,23 +350,37 @@ export class Orchestrator {
       });
     }
 
+    const generatorStart = Date.now();
     const synthesis = await this.deps.generatorLLM({ messages: synthesisMessages });
+    const generatorDurationMs = Date.now() - generatorStart;
+    generatorMs += generatorDurationMs;
 
     if (synthesis.content) {
       yield {
         type: 'narrative',
-        data: { text: synthesis.content },
+        data: { text: synthesis.content, durationMs: generatorDurationMs },
         timestamp: new Date(),
       };
     }
 
-    // 7. DONE — run-local telemetry only (not global queue state)
+    // 7. DONE — run-local telemetry with full micro-step timing breakdown
+    const timing: RunTiming = {
+      totalMs: Date.now() - runStart,
+      retrievalMs,
+      orchestratorMs,
+      federationMs,
+      autonomyMs,
+      generatorMs,
+      memoryMs,
+    };
+
     yield {
       type: 'done',
       data: {
         loopIterations: completedIterations,
         actionsExecuted: toolResults.length,
         actionsPending: runPendingActionIds.size,
+        timing,
       },
       timestamp: new Date(),
     };

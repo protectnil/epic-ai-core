@@ -431,14 +431,25 @@ export type StreamEventType =
   | 'done';
 
 // Discriminated union — each event type has an exact payload shape
-export interface PlanEvent { type: 'plan'; data: { iteration: number; toolCalls: string[] }; timestamp: Date }
+export interface PlanEvent { type: 'plan'; data: { iteration: number; toolCalls: string[]; durationMs: number }; timestamp: Date }
 export interface ActionEvent { type: 'action'; data: { tool: string; server: string; durationMs: number }; timestamp: Date }
-export interface ApprovalNeededEvent { type: 'approval-needed'; data: { actionId: string; tool: string; server: string; tier: string }; timestamp: Date }
+export interface ApprovalNeededEvent { type: 'approval-needed'; data: { actionId: string; tool: string; server: string; tier: string; durationMs: number }; timestamp: Date }
 export interface ResultEvent { type: 'result'; data: { tool: string; content: unknown; isError: boolean }; timestamp: Date }
-export interface NarrativeEvent { type: 'narrative'; data: { text: string }; timestamp: Date }
-export interface MemoryEvent { type: 'memory'; data: { etched: boolean; findingsCount: number }; timestamp: Date }
+export interface NarrativeEvent { type: 'narrative'; data: { text: string; durationMs: number }; timestamp: Date }
+export interface MemoryEvent { type: 'memory'; data: { etched: boolean; findingsCount: number; durationMs: number }; timestamp: Date }
 export interface ErrorEvent { type: 'error'; data: { message: string; tool?: string; server?: string }; timestamp: Date }
-export interface DoneEvent { type: 'done'; data: { loopIterations: number; actionsExecuted: number; actionsPending: number }; timestamp: Date }
+export interface DoneEvent { type: 'done'; data: { loopIterations: number; actionsExecuted: number; actionsPending: number; timing: RunTiming }; timestamp: Date }
+
+/** Micro-step timing breakdown for a single run */
+export interface RunTiming {
+  totalMs: number;
+  retrievalMs: number;
+  orchestratorMs: number;
+  federationMs: number;
+  autonomyMs: number;
+  generatorMs: number;
+  memoryMs: number;
+}
 
 export type StreamEvent =
   | PlanEvent

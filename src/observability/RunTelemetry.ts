@@ -196,9 +196,18 @@ export class RunTelemetryCollector {
           .join('\n')
       : '  - (none)';
 
+    // Extract timing breakdown from done event if present
+    const doneStep = snapshot.recentSteps.find(s => s.type === 'done');
+    const timing = doneStep?.data && typeof doneStep.data === 'object' && 'timing' in doneStep.data
+      ? (doneStep.data as unknown as { timing: Record<string, number> }).timing
+      : null;
+    const timingLine = timing
+      ? `Timing: retrieval=${timing.retrievalMs}ms orchestrator=${timing.orchestratorMs}ms federation=${timing.federationMs}ms autonomy=${timing.autonomyMs}ms generator=${timing.generatorMs}ms memory=${timing.memoryMs}ms total=${timing.totalMs}ms`
+      : `Duration: ${snapshot.durationMs}ms`;
+
     return [
       `Run ${snapshot.runId}`,
-      `Duration: ${snapshot.durationMs}ms`,
+      timingLine,
       `Events: ${events}`,
       `Logs: ${logs}`,
       `Last event: ${snapshot.lastEventType ?? 'none'}`,

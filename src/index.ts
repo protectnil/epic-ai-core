@@ -163,4 +163,5 @@ export type {
   MemoryEvent,
   ErrorEvent,
   DoneEvent,
+  RunTiming,
 } from './types/index.js';

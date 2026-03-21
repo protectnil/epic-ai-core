@@ -39,6 +39,17 @@ describe('Orchestrator done payload — semantic correctness', () => {
     expect(done!.data.loopIterations).toBe(1);
     expect(done!.data.actionsExecuted).toBe(0);
     expect(done!.data.actionsPending).toBe(0);
+
+    // Micro-step timing breakdown present
+    const timing = (done!.data as Record<string, unknown>).timing as Record<string, number>;
+    expect(timing).toBeDefined();
+    expect(timing.totalMs).toBeGreaterThanOrEqual(0);
+    expect(timing.retrievalMs).toBeGreaterThanOrEqual(0);
+    expect(timing.orchestratorMs).toBeGreaterThanOrEqual(0);
+    expect(timing.federationMs).toBe(0); // no tools called
+    expect(timing.autonomyMs).toBe(0); // no tools called
+    expect(timing.generatorMs).toBeGreaterThanOrEqual(0);
+    expect(timing.memoryMs).toBe(0); // no memory configured
   });
 
   it('actionsPending is run-local, not global queue', async () => {
