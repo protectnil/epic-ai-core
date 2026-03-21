@@ -21,10 +21,15 @@
     "./mcp-servers/*": {
       "import": "./dist/mcp-servers/*.js",
       "types": "./dist/mcp-servers/*.d.ts"
+    },
+    "./harness": {
+      "import": "./dist/harness/index.js",
+      "types": "./dist/harness/index.d.ts"
     }
   },
   "bin": {
-    "epic-ai": "./dist/bin/setup.js"
+    "epic-ai": "./dist/bin/setup.js",
+    "epicai-harness": "./dist/harness/cli.js"
   },
   "files": [
     "dist",
