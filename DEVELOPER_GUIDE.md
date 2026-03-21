@@ -979,11 +979,35 @@ class MyAuditStore implements AuditStoreAdapter {
 
 ## Testing
 
+The test suite is split into three lanes:
+
+| Command | What it runs | External dependencies |
+|---|---|---|
+| `npm test` | Unit tests + harness integration tests + MCP endpoint pings | None |
+| `npm run test:integration` | Ollama integration tests (`tests/integration/`) | Running Ollama with model pulled |
+| `npm run test:harness` | Standalone transport check (stdio, HTTP, API) | None |
+
 ```bash
-npm test              # Run all tests
-npm run test:watch    # Watch mode
-npm run build         # TypeScript compile
+npm test                  # Default suite — all tests except integration/
+npm run test:integration  # Requires Ollama running locally
+npm run test:harness      # Standalone harness check (no vitest)
+npm run test:watch        # Watch mode (default suite)
+npm run build             # TypeScript compile
 ```
+
+### Default suite (`npm test`)
+
+Runs via `vitest run`. Includes unit tests, harness transport tests, orchestrator integration tests, and MCP server endpoint pings. Does not require any external services. Excludes `tests/integration/**` because those tests require a running Ollama instance and will hang during vitest file collection if Ollama is not available.
+
+### Integration suite (`npm run test:integration`)
+
+Runs `tests/integration/ollama.test.ts` against a real Ollama instance with `mistral:7b` pulled. Expects Ollama serving on `http://localhost:11434`. Tests skip gracefully if Ollama is not available, but the file must still be run in its own vitest invocation to avoid collection-phase hangs.
+
+### Standalone harness check (`npm run test:harness`)
+
+Runs `tests/harness-check.ts` via `npx tsx` — no vitest. Spawns real MCP servers over all three transport profiles (stdio, HTTP, API), executes 15 assertions per profile (45 total), and calls `process.exit()` on completion. Use this to verify transport correctness independent of the test framework.
+
+### Writing tests with mock LLMs
 
 The SDK provides in-memory adapters for all extension points, enabling fully offline testing:
 
