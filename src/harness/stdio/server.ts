@@ -1,85 +1,43 @@
 /**
  * @epicai/core — Test Harness STDIO Backend
- * In-process MCP server over PassThrough streams.
+ * Spawns a real child process MCP server over stdio.
  * Built on the Epic AI® Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
-import { PassThrough } from 'node:stream';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { z } from 'zod';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { HarnessProfile, type HarnessBackend, type HarnessToolResult, type ToolInfo, PER_TOOL_TIMEOUT } from '../types.js';
-// CANONICAL_TOOLS used for reference; tools registered individually below
-import { createHandlerState, resetHandlerState, handleTool } from '../shared/handlers.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function resolveProcessScript(dir: string): string {
+  // Works whether running from src/ (vitest) or dist/ (compiled)
+  const distPath = resolve(dir, '..', '..', '..', 'dist', 'harness', 'stdio', 'process.js');
+  const localPath = resolve(dir, 'process.js');
+  // Prefer dist/ if running from src/ (vitest uses ts source, but child process needs compiled JS)
+  if (dir.includes('/src/')) return distPath;
+  return localPath;
+}
 
 export class StdioHarnessBackend implements HarnessBackend {
   readonly profile = HarnessProfile.Stdio;
 
-  private mcpServer: McpServer | null = null;
   private client: Client | null = null;
-  private state = createHandlerState(HarnessProfile.Stdio);
+  private transport: StdioClientTransport | null = null;
 
   async start(): Promise<void> {
-    this.state = createHandlerState(HarnessProfile.Stdio);
+    const serverScript = resolveProcessScript(__dirname);
 
-    // Create in-process stream pairs
-    const clientToServer = new PassThrough();
-    const serverToClient = new PassThrough();
+    this.transport = new StdioClientTransport({
+      command: 'node',
+      args: [serverScript],
+    });
 
-    // Server side
-    this.mcpServer = new McpServer({ name: 'harness-stdio', version: '1.0.0' });
-    this.registerTools();
-
-    const serverTransport = new StdioServerTransport(clientToServer, serverToClient);
-    await this.mcpServer.connect(serverTransport);
-
-    // Client side — custom Transport over PassThrough streams (no child process)
     this.client = new Client({ name: 'harness-stdio-client', version: '1.0.0' });
-
-    let onMessage: ((message: unknown) => void) | undefined;
-    let onError: ((error: Error) => void) | undefined;
-    let onClose: (() => void) | undefined;
-
-    const clientTransport: Transport = {
-      start: async () => {
-        let buffer = '';
-        serverToClient.on('data', (chunk: Buffer) => {
-          buffer += chunk.toString();
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-          for (const line of lines) {
-            if (line.trim() && onMessage) {
-              try {
-                onMessage(JSON.parse(line));
-              } catch {
-                // ignore parse errors
-              }
-            }
-          }
-        });
-        serverToClient.on('end', () => onClose?.());
-        clientToServer.on('error', (err: Error) => onError?.(err));
-        serverToClient.on('error', (err: Error) => onError?.(err));
-      },
-      close: async () => {
-        clientToServer.end();
-        serverToClient.end();
-      },
-      send: async (message) => {
-        clientToServer.write(JSON.stringify(message) + '\n');
-      },
-      set onmessage(handler: ((message: unknown) => void) | undefined) { onMessage = handler; },
-      get onmessage() { return onMessage; },
-      set onerror(handler: ((error: Error) => void) | undefined) { onError = handler; },
-      get onerror() { return onError; },
-      set onclose(handler: (() => void) | undefined) { onClose = handler; },
-      get onclose() { return onClose; },
-    };
-
-    await this.client.connect(clientTransport);
+    await this.client.connect(this.transport);
   }
 
   async stop(): Promise<void> {
@@ -87,10 +45,7 @@ export class StdioHarnessBackend implements HarnessBackend {
       await this.client.close();
       this.client = null;
     }
-    if (this.mcpServer) {
-      await this.mcpServer.close();
-      this.mcpServer = null;
-    }
+    this.transport = null;
   }
 
   async healthCheck(): Promise<boolean> {
@@ -104,17 +59,21 @@ export class StdioHarnessBackend implements HarnessBackend {
   }
 
   async reset(): Promise<void> {
-    resetHandlerState(this.state);
+    if (!this.client) throw new Error('Backend not started');
+    // Reset via the special _harness_reset tool (stdio has no out-of-band channel)
+    await this.client.callTool({ name: '_harness_reset', arguments: {} });
   }
 
   async listTools(): Promise<ToolInfo[]> {
     if (!this.client) throw new Error('Backend not started');
     const result = await this.client.listTools();
-    return result.tools.map(t => ({
-      name: t.name,
-      description: t.description ?? '',
-      parameters: t.inputSchema as Record<string, unknown>,
-    }));
+    return result.tools
+      .filter(t => !t.name.startsWith('_harness_'))  // hide internal tools
+      .map(t => ({
+        name: t.name,
+        description: t.description ?? '',
+        parameters: t.inputSchema as Record<string, unknown>,
+      }));
   }
 
   async callTool(name: string, args: Record<string, unknown>): Promise<HarnessToolResult> {
@@ -149,50 +108,5 @@ export class StdioHarnessBackend implements HarnessBackend {
         durationMs: Date.now() - start,
       };
     }
-  }
-
-  private registerTools(): void {
-    if (!this.mcpServer) return;
-    const state = this.state;
-
-    this.mcpServer.tool('echo', { message: z.string() }, async (args) => {
-      const result = await handleTool('echo', args, state);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result.content) }], isError: result.isError };
-    });
-
-    this.mcpServer.tool('sleep', { ms: z.number() }, async (args) => {
-      const result = await handleTool('sleep', args, state);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result.content) }], isError: result.isError };
-    });
-
-    this.mcpServer.tool('fail', { reason: z.string().optional() }, async (args) => {
-      const result = await handleTool('fail', args, state);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result.content) }], isError: result.isError };
-    });
-
-    this.mcpServer.tool('malformed', { variant: z.number().optional() }, async (args) => {
-      const result = await handleTool('malformed', args, state);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result.content) }], isError: result.isError };
-    });
-
-    this.mcpServer.tool('approval_target', { action: z.string() }, async (args) => {
-      const result = await handleTool('approval_target', args, state);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result.content) }], isError: result.isError };
-    });
-
-    this.mcpServer.tool('multi_step', { step: z.number() }, async (args) => {
-      const result = await handleTool('multi_step', args, state);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result.content) }], isError: result.isError };
-    });
-
-    this.mcpServer.tool('stateful_counter', {}, async () => {
-      const result = await handleTool('stateful_counter', {}, state);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result.content) }], isError: result.isError };
-    });
-
-    this.mcpServer.tool('ping', {}, async () => {
-      const result = await handleTool('ping', {}, state);
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result.content) }], isError: result.isError };
-    });
   }
 }

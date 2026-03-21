@@ -1,117 +1,141 @@
 /**
  * @epicai/core — Test Harness HTTP Backend
- * Local MCP server over streamable-http on an ephemeral port.
+ * Spawns a real child process MCP server over streamable-http.
+ * Connects via StreamableHTTPClientTransport for real MCP HTTP framing.
  * Built on the Epic AI® Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
-import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
-import { HarnessProfile, type HarnessBackend, type HarnessToolResult, type ToolInfo, PER_TOOL_TIMEOUT } from '../types.js';
-import { CANONICAL_TOOLS } from '../shared/toolDefs.js';
-import { createHandlerState, resetHandlerState, handleTool, type HandlerState } from '../shared/handlers.js';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { HarnessProfile, type HarnessBackend, type HarnessToolResult, type ToolInfo, PER_TOOL_TIMEOUT, HTTP_CONNECT_TIMEOUT } from '../types.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function resolveProcessScript(dir: string): string {
+  const distPath = resolve(dir, '..', '..', '..', 'dist', 'harness', 'http', 'process.js');
+  const localPath = resolve(dir, 'process.js');
+  if (dir.includes('/src/')) return distPath;
+  return localPath;
+}
 
 export class HttpHarnessBackend implements HarnessBackend {
   readonly profile = HarnessProfile.Http;
 
-  private server: Server | null = null;
+  private client: Client | null = null;
+  private childProcess: ChildProcess | null = null;
   private port = 0;
-  private state: HandlerState = createHandlerState(HarnessProfile.Http);
 
   async start(): Promise<void> {
-    this.state = createHandlerState(HarnessProfile.Http);
+    const serverScript = resolveProcessScript(__dirname);
 
-    await new Promise<void>((resolve, reject) => {
-      const state = this.state;
-
-      this.server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
-        // Auth check
-        const auth = req.headers.authorization;
-        if (auth !== 'Bearer harness-http-token') {
-          res.writeHead(401, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Unauthorized' }));
-          return;
-        }
-
-        const body = await readBody(req);
-
-        if (req.method === 'GET' && req.url === '/healthz') {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ status: 'ok' }));
-          return;
-        }
-
-        if (req.method === 'POST' && req.url === '/tools/list') {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ tools: CANONICAL_TOOLS }));
-          return;
-        }
-
-        if (req.method === 'POST' && req.url === '/tools/call') {
-          const parsed = JSON.parse(body);
-          const { name, args } = parsed as { name: string; args: Record<string, unknown> };
-          const result = await handleTool(name, args ?? {}, state);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(result));
-          return;
-        }
-
-        if (req.method === 'POST' && req.url === '/reset') {
-          resetHandlerState(state);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ reset: true }));
-          return;
-        }
-
-        res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Not found' }));
-      });
-
-      this.server.listen(0, '127.0.0.1', () => {
-        const addr = this.server!.address();
-        if (addr && typeof addr === 'object') {
-          this.port = addr.port;
-        }
-        resolve();
-      });
-
-      this.server.on('error', reject);
+    // Spawn the HTTP server as a child process
+    this.childProcess = spawn('node', [serverScript], {
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
+
+    // Wait for the child to report its port
+    this.port = await new Promise<number>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('HTTP harness server did not report port within timeout')), HTTP_CONNECT_TIMEOUT);
+
+      this.childProcess!.stdout!.on('data', (data: Buffer) => {
+        const line = data.toString().trim();
+        const match = line.match(/^HARNESS_PORT=(\d+)$/);
+        if (match) {
+          clearTimeout(timeout);
+          resolve(parseInt(match[1], 10));
+        }
+      });
+
+      this.childProcess!.on('error', (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+
+      this.childProcess!.on('exit', (code) => {
+        clearTimeout(timeout);
+        reject(new Error(`HTTP harness server exited with code ${code}`));
+      });
+    });
+
+    // Connect via real StreamableHTTPClientTransport
+    const url = new URL(`http://127.0.0.1:${this.port}/mcp`);
+    const transport = new StreamableHTTPClientTransport(url);
+
+    this.client = new Client({ name: 'harness-http-client', version: '1.0.0' });
+    await this.client.connect(transport);
   }
 
   async stop(): Promise<void> {
-    if (this.server) {
-      await new Promise<void>((resolve) => {
-        this.server!.close(() => resolve());
-      });
-      this.server = null;
+    if (this.client) {
+      try {
+        await this.client.close();
+      } catch {
+        // Best-effort
+      }
+      this.client = null;
+    }
+    if (this.childProcess) {
+      this.childProcess.kill('SIGTERM');
+      this.childProcess = null;
     }
   }
 
   async healthCheck(): Promise<boolean> {
+    if (!this.client) return false;
     try {
-      const res = await this.fetch('GET', '/healthz') as { status: string };
-      return res.status === 'ok';
+      await this.client.ping();
+      return true;
     } catch {
       return false;
     }
   }
 
   async reset(): Promise<void> {
-    await this.fetch('POST', '/reset');
+    if (!this.client) throw new Error('Backend not started');
+    await this.client.callTool({ name: '_harness_reset', arguments: {} });
   }
 
   async listTools(): Promise<ToolInfo[]> {
-    const res = await this.fetch('POST', '/tools/list');
-    return (res as { tools: ToolInfo[] }).tools;
+    if (!this.client) throw new Error('Backend not started');
+    const result = await this.client.listTools();
+    return result.tools
+      .filter(t => !t.name.startsWith('_harness_'))
+      .map(t => ({
+        name: t.name,
+        description: t.description ?? '',
+        parameters: t.inputSchema as Record<string, unknown>,
+      }));
   }
 
   async callTool(name: string, args: Record<string, unknown>): Promise<HarnessToolResult> {
+    if (!this.client) throw new Error('Backend not started');
     const start = Date.now();
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), PER_TOOL_TIMEOUT);
+
     try {
-      const res = await this.fetch('POST', '/tools/call', { name, args });
-      const result = res as { content: unknown; isError: boolean };
-      return { content: result.content, isError: result.isError, durationMs: Date.now() - start };
+      const result = await this.client.callTool({ name, arguments: args });
+      clearTimeout(timeout);
+      const content = result.content;
+      const isError = result.isError === true;
+
+      let parsed: unknown = content;
+      if (Array.isArray(content) && content.length > 0 && typeof content[0] === 'object' && content[0] !== null && 'text' in content[0]) {
+        try {
+          parsed = JSON.parse((content[0] as { text: string }).text);
+        } catch {
+          parsed = (content[0] as { text: string }).text;
+        }
+      }
+
+      return { content: parsed, isError, durationMs: Date.now() - start };
     } catch (err) {
+      clearTimeout(timeout);
       return {
         content: { code: 'CALL_ERROR', message: err instanceof Error ? err.message : String(err) },
         isError: true,
@@ -119,42 +143,4 @@ export class HttpHarnessBackend implements HarnessBackend {
       };
     }
   }
-
-  private async fetch(method: string, path: string, body?: unknown): Promise<unknown> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), PER_TOOL_TIMEOUT);
-
-    try {
-      const res = await globalThis.fetch(`http://127.0.0.1:${this.port}${path}`, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer harness-http-token',
-        },
-        body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeout);
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`HTTP ${res.status}: ${text}`);
-      }
-
-      return await res.json();
-    } catch (err) {
-      clearTimeout(timeout);
-      throw err;
-    }
-  }
-}
-
-function readBody(req: IncomingMessage): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks).toString()));
-    req.on('error', reject);
-  });
 }

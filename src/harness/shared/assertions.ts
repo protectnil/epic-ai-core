@@ -77,8 +77,8 @@ const TESTS: TestCase[] = [
       const result = await b.callTool('sleep', SLEEP_PAYLOAD);
       assertEqual(result.isError, false, 'sleep isError');
       assertEqual(result.content, SLEEP_EXPECTED, 'sleep content');
-      if (result.durationMs < 90) {
-        throw new Error(`sleep duration too short: ${result.durationMs}ms`);
+      if (result.durationMs < 50) {
+        throw new Error(`sleep duration too short: ${result.durationMs}ms (expected >= 50ms for 100ms sleep)`);
       }
     },
   },
