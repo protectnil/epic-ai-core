@@ -1,6 +1,6 @@
 {
   "name": "@epicai/core",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Epic AI® Zero LLM Context MCP Orchestrator — Intelligent Virtual Assistant (IVA) for all 10 (ISC)² security domains. Local SLM routes tools, cloud LLM responds. Security data never leaves your infrastructure.",
   "type": "module",
   "main": "./dist/index.js",
