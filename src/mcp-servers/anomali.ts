@@ -3,22 +3,12 @@
  * Integrates Anomali ThreatStream REST API for threat intelligence and indicators
  * Base URL: https://api.threatstream.com/api/v2
  * Auth: Authorization header (apikey {username}:{apiKey})
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
-interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-
-interface ToolResult {
-  content: Array<{ type: 'text'; text: string }>;
-  isError: boolean;
-}
+import { ToolDefinition, ToolResult } from './types.js';
 
 interface AnomaliConfig {
   username: string;
@@ -190,7 +180,6 @@ export class AnomaliMCPServer {
       throw new Error(`Anomali API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Anomali returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -214,7 +203,6 @@ export class AnomaliMCPServer {
       throw new Error(`Anomali API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Anomali returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -238,7 +226,6 @@ export class AnomaliMCPServer {
       throw new Error(`Anomali API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Anomali returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -264,7 +251,6 @@ export class AnomaliMCPServer {
       throw new Error(`Anomali API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Anomali returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -291,7 +277,6 @@ export class AnomaliMCPServer {
       throw new Error(`Anomali API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Anomali returned non-JSON response (HTTP ${response.status})`); }
     return {

@@ -1,3 +1,8 @@
+/**
+ * @epicai/core — IBM QRadar MCP Server
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
+ */
 import { ToolDefinition, ToolResult } from './types.js';
 
 export class QRadarMCPServer {
@@ -184,7 +189,6 @@ export class QRadarMCPServer {
       throw new Error(`QRadar API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -210,7 +214,6 @@ export class QRadarMCPServer {
       throw new Error(`QRadar API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -249,7 +252,6 @@ export class QRadarMCPServer {
       throw new Error(`QRadar API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -284,7 +286,6 @@ export class QRadarMCPServer {
       throw new Error(`QRadar API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -310,7 +311,6 @@ export class QRadarMCPServer {
       headers['Range'] = range;
     }
 
-    // Finding #14: Correct endpoint for analytics rules (not regex_properties)
     const response = await fetch(
       `${this.baseUrl}/analytics/rules?${params}`,
       { method: 'GET', headers }
@@ -320,7 +320,6 @@ export class QRadarMCPServer {
       throw new Error(`QRadar API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();

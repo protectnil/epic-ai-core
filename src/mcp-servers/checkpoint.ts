@@ -5,7 +5,6 @@ export class CheckPointMCPServer {
   private readonly username: string;
   private readonly password: string;
   private sessionId: string | null = null;
-  // Finding #8: track session token expiry; Check Point sessions are 10 minutes by default
   private tokenExpiry: number = 0;
   private static readonly SESSION_TTL_MS = 600_000; // 10 minutes
 
@@ -105,7 +104,6 @@ export class CheckPointMCPServer {
 
   async callTool(name: string, args: Record<string, unknown>): Promise<ToolResult> {
     try {
-      // Finding #8: Ensure valid session; re-auth if expired
       if (!this.sessionId || Date.now() >= this.tokenExpiry) {
         await this.login();
       }
@@ -136,10 +134,12 @@ export class CheckPointMCPServer {
   }
 
   /**
-   * Finding #8: On 401/403, clear session and re-authenticate once, then retry.
-   * NOTE (Finding #17): Check Point uses password-based session auth (ROPC-equivalent).
+   * Check Point uses password-based session auth (ROPC-equivalent).
    * This is required by the Check Point Management API — no alternative token endpoint exists.
-   */
+   
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
+ */
   private async withReauth<T>(fn: () => Promise<T>): Promise<T> {
     try {
       return await fn();
@@ -182,7 +182,6 @@ export class CheckPointMCPServer {
     }
 
     this.sessionId = data.sid;
-    // Finding #8: record expiry so we re-auth before the session times out
     this.tokenExpiry = Date.now() + CheckPointMCPServer.SESSION_TTL_MS;
   }
 
@@ -215,7 +214,6 @@ export class CheckPointMCPServer {
       throw new Error(`Check Point API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -242,7 +240,6 @@ export class CheckPointMCPServer {
       throw new Error(`Check Point API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -273,7 +270,6 @@ export class CheckPointMCPServer {
       throw new Error(`Check Point API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -299,7 +295,6 @@ export class CheckPointMCPServer {
       throw new Error(`Check Point API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -325,7 +320,6 @@ export class CheckPointMCPServer {
       throw new Error(`Check Point API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();

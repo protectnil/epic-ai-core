@@ -1,6 +1,9 @@
 /**
  * Trend Micro Vision One MCP Server
  * Provides access to Trend Micro Vision One REST API endpoints for detection and analysis
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
 import { ToolDefinition, ToolResult } from './types.js';
@@ -156,7 +159,6 @@ export class TrendMicroMCPServer {
 
           const response = await fetch(url, { method: 'GET', headers });
 
-          // Finding #21: On 401, throw clear error to caller — token is static with no refresh
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -168,7 +170,6 @@ export class TrendMicroMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -192,7 +193,6 @@ export class TrendMicroMCPServer {
             { method: 'GET', headers }
           );
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -204,7 +204,6 @@ export class TrendMicroMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -230,7 +229,6 @@ export class TrendMicroMCPServer {
 
           const response = await fetch(url, { method: 'GET', headers });
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -242,7 +240,6 @@ export class TrendMicroMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -264,7 +261,6 @@ export class TrendMicroMCPServer {
             };
           }
 
-          // Finding #13: Remove encodeURIComponent from JSON body values.
           // encodeURIComponent is only for URL query params, not JSON body fields.
           const response = await fetch(`${this.baseUrl}/v3.0/search/suspicious-objects`, {
             method: 'POST',
@@ -272,7 +268,6 @@ export class TrendMicroMCPServer {
             body: JSON.stringify({ query, type, limit }),
           });
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -284,7 +279,6 @@ export class TrendMicroMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -312,7 +306,6 @@ export class TrendMicroMCPServer {
             body: JSON.stringify({ object, type, analysisType }),
           });
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -324,7 +317,6 @@ export class TrendMicroMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();

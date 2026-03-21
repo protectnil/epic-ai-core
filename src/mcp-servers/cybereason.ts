@@ -1,17 +1,10 @@
-interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
+/**
+ * @epicai/core — Cybereason MCP Server
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
+ */
 
-interface ToolResult {
-  content: Array<{ type: 'text'; text: string }>;
-  isError: boolean;
-}
+import { ToolDefinition, ToolResult } from './types.js';
 
 interface CybereasonConfig {
   host: string;
@@ -212,7 +205,6 @@ export class CybereasonMCPServer {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Cybereason returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -234,7 +226,6 @@ export class CybereasonMCPServer {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Cybereason returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -257,7 +248,6 @@ export class CybereasonMCPServer {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Cybereason returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -279,7 +269,6 @@ export class CybereasonMCPServer {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Cybereason returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -312,7 +301,6 @@ export class CybereasonMCPServer {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Cybereason returned non-JSON response (HTTP ${response.status})`); }
     return {

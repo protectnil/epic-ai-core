@@ -1,6 +1,9 @@
 /**
  * Delinea Secret Server MCP Server
  * Provides access to Delinea Secret Server REST API endpoints for secrets management
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
 import { ToolDefinition, ToolResult } from './types.js';
@@ -32,7 +35,6 @@ export class DelineaMCPServer {
 
     try {
       /**
-       * Finding #17: Delinea Secret Server only supports the Resource Owner Password Credentials (ROPC)
        * grant type (grant_type=password) on its /oauth/token endpoint.
        * No machine-to-machine client_credentials endpoint is available.
        * Risk: password is transmitted to the token endpoint on every refresh.
@@ -242,7 +244,6 @@ export class DelineaMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -280,7 +281,6 @@ export class DelineaMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -319,7 +319,6 @@ export class DelineaMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -360,7 +359,6 @@ export class DelineaMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -395,7 +393,6 @@ export class DelineaMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();

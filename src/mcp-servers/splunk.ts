@@ -1,3 +1,8 @@
+/**
+ * @epicai/core — Splunk MCP Server
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
+ */
 import { ToolDefinition, ToolResult } from './types.js';
 
 export class SplunkMCPServer {
@@ -100,7 +105,6 @@ export class SplunkMCPServer {
   }
 
   private async searchJobs(search: string, earliestTime?: string, latestTime?: string, count?: number): Promise<ToolResult> {
-    // Finding #15: params sent in POST body, not URL query string
     const params = new URLSearchParams({
       search,
       earliest_time: earliestTime || '-24h',
@@ -130,7 +134,6 @@ export class SplunkMCPServer {
 
     if (!response.ok) throw new Error(`Splunk API error: ${response.status} ${response.statusText}`);
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Splunk returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
@@ -147,20 +150,17 @@ export class SplunkMCPServer {
 
     if (!response.ok) throw new Error(`Splunk API error: ${response.status} ${response.statusText}`);
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Splunk returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
   }
 
   private async getNotableEvents(searchQuery?: string, count?: number): Promise<ToolResult> {
-    // Finding #4: Do not concatenate user-supplied searchQuery into SPL.
     // Reject queries with pipe characters to prevent SPL injection.
     if (searchQuery && searchQuery.includes('|')) {
       return { content: [{ type: 'text', text: 'search_query must not contain pipe characters' }], isError: true };
     }
 
-    // Finding #15: params go in POST body
     const params = new URLSearchParams({
       search: 'search index=notable',
       earliest_time: '-7d',
@@ -178,7 +178,6 @@ export class SplunkMCPServer {
 
     if (!response.ok) throw new Error(`Splunk API error: ${response.status} ${response.statusText}`);
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Splunk returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
@@ -195,7 +194,6 @@ export class SplunkMCPServer {
 
     if (!response.ok) throw new Error(`Splunk API error: ${response.status} ${response.statusText}`);
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Splunk returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };

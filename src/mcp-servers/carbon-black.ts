@@ -1,6 +1,9 @@
 /**
  * VMware Carbon Black Cloud MCP Server
  * Provides access to Carbon Black Cloud REST API endpoints for alert and process management
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
 import { ToolDefinition, ToolResult } from './types.js';
@@ -12,12 +15,10 @@ interface CarbonBlackConfig {
 }
 
 export class CarbonBlackMCPServer {
-  // Finding #11: Composed auth token stored as a single value; individual components discarded
   private readonly authToken: string;
   private readonly baseUrl: string;
 
   constructor(config: CarbonBlackConfig) {
-    // Finding #11: compose once in constructor, never store apiKey/connectorId separately
     this.authToken = `${config.apiKey}/${config.connectorId}`;
     this.baseUrl = config.baseUrl || 'https://defense.conferdeploy.net';
   }
@@ -129,7 +130,6 @@ export class CarbonBlackMCPServer {
 
   async callTool(name: string, args: Record<string, unknown>): Promise<ToolResult> {
     try {
-      // Finding #11: use the pre-composed authToken
       const headers: Record<string, string> = {
         'X-Auth-Token': this.authToken,
         'Content-Type': 'application/json',
@@ -162,7 +162,6 @@ export class CarbonBlackMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -193,7 +192,6 @@ export class CarbonBlackMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -238,7 +236,6 @@ export class CarbonBlackMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -267,7 +264,6 @@ export class CarbonBlackMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -304,7 +300,6 @@ export class CarbonBlackMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();

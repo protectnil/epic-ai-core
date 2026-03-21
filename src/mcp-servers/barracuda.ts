@@ -2,22 +2,12 @@
  * Barracuda Email Security REST API MCP Server Wrapper
  * REST API: https://{host}/api/v1
  * Auth: API key header (Authorization: Bearer {api_key})
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
-interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-
-interface ToolResult {
-  content: Array<{ type: 'text'; text: string }>;
-  isError: boolean;
-}
+import { ToolDefinition, ToolResult } from './types.js';
 
 interface BarracudaAuthConfig {
   host: string;
@@ -57,7 +47,6 @@ export class BarracudaMCPServer {
       );
     }
 
-    // Finding #19: wrap response.json() to provide contextual error on non-JSON responses
     try {
       return await response.json();
     } catch {

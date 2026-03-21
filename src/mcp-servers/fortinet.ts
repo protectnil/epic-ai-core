@@ -1,3 +1,8 @@
+/**
+ * @epicai/core — Fortinet MCP Server
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
+ */
 import { ToolDefinition, ToolResult } from './types.js';
 
 export class FortinetMCPServer {
@@ -142,7 +147,6 @@ export class FortinetMCPServer {
     const limit = (args.limit as number) || 100;
     const start = (args.start as number) || 0;
 
-    // Finding #6: encodeURIComponent applied to all filter values
     let url = `${this.baseUrl}/cmdb/firewall/policy?vdom=${encodeURIComponent(vdom)}&limit=${limit}&start=${start}`;
 
     if (filter) {
@@ -158,7 +162,6 @@ export class FortinetMCPServer {
       throw new Error(`Fortinet API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -174,7 +177,6 @@ export class FortinetMCPServer {
     let url = `${this.baseUrl}/monitor/system/security-rating`;
 
     if (type) {
-      // Finding #6: encodeURIComponent applied to filter value
       url += `?filter=${encodeURIComponent(`type=${type}`)}`;
     }
 
@@ -187,7 +189,6 @@ export class FortinetMCPServer {
       throw new Error(`Fortinet API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -204,7 +205,6 @@ export class FortinetMCPServer {
     let url = `${this.baseUrl}/cmdb/vpn/ipsec/phase1?vdom=${encodeURIComponent(vdom)}`;
 
     if (status) {
-      // Finding #6: encodeURIComponent applied to status filter value
       url += `&filter=status%3D${encodeURIComponent(status)}`;
     }
 
@@ -217,7 +217,6 @@ export class FortinetMCPServer {
       throw new Error(`Fortinet API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -241,7 +240,6 @@ export class FortinetMCPServer {
       throw new Error(`Fortinet API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -256,7 +254,6 @@ export class FortinetMCPServer {
     const filter = args.filter as string | undefined;
     const limit = (args.limit as number) || 100;
 
-    // Finding #6: encodeURIComponent applied to all filter values
     let url = `${this.baseUrl}/cmdb/firewall/address?vdom=${encodeURIComponent(vdom)}&limit=${limit}`;
 
     if (filter) {
@@ -272,7 +269,6 @@ export class FortinetMCPServer {
       throw new Error(`Fortinet API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();

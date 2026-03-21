@@ -3,24 +3,14 @@
  * Integrates Darktrace REST API for AI-driven threat detection and response
  * Base URL: https://{instance}.darktrace.com
  * Auth: HMAC signature (public_token + private_token + date-based HMAC-SHA1)
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
+import { ToolDefinition, ToolResult } from './types.js';
+
 import * as crypto from 'crypto';
-
-interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-
-interface ToolResult {
-  content: Array<{ type: 'text'; text: string }>;
-  isError: boolean;
-}
 
 interface DarktraceConfig {
   publicToken: string;
@@ -224,7 +214,6 @@ export class DarktraceMCPServer {
       throw new Error(`Darktrace API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Darktrace returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -250,7 +239,6 @@ export class DarktraceMCPServer {
       throw new Error(`Darktrace API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Darktrace returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -279,7 +267,6 @@ export class DarktraceMCPServer {
       throw new Error(`Darktrace API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Darktrace returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -308,7 +295,6 @@ export class DarktraceMCPServer {
       throw new Error(`Darktrace API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Darktrace returned non-JSON response (HTTP ${response.status})`); }
     return {
@@ -338,7 +324,6 @@ export class DarktraceMCPServer {
       throw new Error(`Darktrace API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Darktrace returned non-JSON response (HTTP ${response.status})`); }
     return {

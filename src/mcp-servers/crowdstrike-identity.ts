@@ -1,6 +1,9 @@
 /**
  * CrowdStrike Identity Protection MCP Server
  * Provides access to CrowdStrike Identity Protection REST API endpoints for identity threat detection
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
 import { ToolDefinition, ToolResult } from './types.js';
@@ -11,7 +14,6 @@ interface CrowdStrikeIdentityConfig {
   baseUrl?: string;
 }
 
-// Finding #5: FQL injection prevention — escape single quotes in FQL values
 function escapeFql(value: string): string {
   return value.replace(/'/g, "\\'");
 }
@@ -214,7 +216,6 @@ export class CrowdStrikeIdentityMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -251,7 +252,6 @@ export class CrowdStrikeIdentityMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -267,7 +267,6 @@ export class CrowdStrikeIdentityMCPServer {
           const limit = (args.limit as number) || 50;
           const offset = (args.offset as number) || 0;
 
-          // Finding #5: use escapeFql() on all user-supplied FQL values
           let filter = '';
           if (username) {
             filter += `username:'${escapeFql(username)}'`;
@@ -297,7 +296,6 @@ export class CrowdStrikeIdentityMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -337,7 +335,6 @@ export class CrowdStrikeIdentityMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -353,7 +350,6 @@ export class CrowdStrikeIdentityMCPServer {
           const limit = (args.limit as number) || 50;
           const offset = (args.offset as number) || 0;
 
-          // Finding #5: use escapeFql() on all user-supplied FQL values
           let filter = '';
           if (entityType) {
             filter += `entity_type:'${escapeFql(entityType)}'`;
@@ -383,7 +379,6 @@ export class CrowdStrikeIdentityMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();

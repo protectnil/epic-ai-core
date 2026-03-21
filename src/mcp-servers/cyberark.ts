@@ -1,6 +1,9 @@
 /**
  * CyberArk MCP Server
  * Provides access to CyberArk REST API endpoints for privileged access management
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
 import { ToolDefinition, ToolResult } from './types.js';
@@ -9,7 +12,7 @@ interface CyberArkConfig {
   username: string;
   password: string;
   baseUrl: string;
-  /** Finding #16: Configurable token TTL in milliseconds. Default: 7.5 hours (27,000,000 ms). */
+  /** Configurable token TTL in milliseconds. Default: 7.5 hours (27,000,000 ms). */
   tokenTtlMs?: number;
 }
 
@@ -19,7 +22,6 @@ export class CyberArkMCPServer {
   private readonly username: string;
   private readonly password: string;
   private readonly baseUrl: string;
-  // Finding #16: token TTL is configurable, not a hardcoded magic number
   private readonly tokenTtlMs: number;
   private authToken: string | null = null;
   private tokenExpiry: number = 0;
@@ -53,7 +55,6 @@ export class CyberArkMCPServer {
 
       const data = (await response.json()) as string;
       this.authToken = data;
-      // Finding #16: use configurable TTL
       this.tokenExpiry = now + this.tokenTtlMs;
       return this.authToken;
     } catch (error) {
@@ -64,7 +65,6 @@ export class CyberArkMCPServer {
   }
 
   /**
-   * Finding #16: On 401, clear token and re-authenticate once, then retry.
    */
   private async withReauth<T>(fn: (token: string) => Promise<T>): Promise<T> {
     let token = await this.getOrRefreshToken();
@@ -223,7 +223,6 @@ export class CyberArkMCPServer {
               };
             }
 
-            // Finding #19
             let data: unknown;
             try {
               data = await response.json();
@@ -251,7 +250,6 @@ export class CyberArkMCPServer {
               };
             }
 
-            // Finding #19
             let data: unknown;
             try {
               data = await response.json();
@@ -282,7 +280,6 @@ export class CyberArkMCPServer {
               };
             }
 
-            // Finding #19
             let data: unknown;
             try {
               data = await response.json();
@@ -317,7 +314,6 @@ export class CyberArkMCPServer {
               };
             }
 
-            // Finding #19
             let data: unknown;
             try {
               data = await response.json();
@@ -356,7 +352,6 @@ export class CyberArkMCPServer {
               };
             }
 
-            // Finding #19
             let data: unknown;
             try {
               data = await response.json();
@@ -382,7 +377,6 @@ export class CyberArkMCPServer {
   }
 
   /**
-   * Finding #23: CyberArk's Logon endpoint returns a bare session token string (not "Bearer <token>").
    * The Authorization header is intentionally sent as the raw token value — this is the documented
    * CyberArk PVWA REST API authentication format.
    */

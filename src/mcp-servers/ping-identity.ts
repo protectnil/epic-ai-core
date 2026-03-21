@@ -1,19 +1,20 @@
 /**
  * Ping Identity MCP Server
  * Provides access to Ping Identity REST API endpoints for identity and access management
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
 import { ToolDefinition, ToolResult } from './types.js';
 
 interface PingIdentityConfig {
   bearerToken: string;
-  // Finding #22: baseUrl stores the root without /v1/; version is in each endpoint path.
   baseUrl?: string;
 }
 
 export class PingIdentityMCPServer {
   private readonly bearerToken: string;
-  // Finding #22: base URL stored without API version — /v1/ is included in each endpoint path
   private readonly baseUrl: string;
 
   constructor(config: PingIdentityConfig) {
@@ -147,7 +148,6 @@ export class PingIdentityMCPServer {
           const filter = args.filter as string | undefined;
           const sort = args.sort as string | undefined;
 
-          // Finding #22: /v1/ included in endpoint path, not in baseUrl
           let url = `${this.baseUrl}/v1/users?limit=${limit}&skip=${skip}`;
           if (filter) url += `&filter=${encodeURIComponent(filter)}`;
           if (sort) url += `&sort=${encodeURIComponent(sort)}`;
@@ -167,7 +167,6 @@ export class PingIdentityMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -183,7 +182,6 @@ export class PingIdentityMCPServer {
             return { content: [{ type: 'text', text: 'user_id is required' }], isError: true };
           }
 
-          // Finding #22: /v1/ in endpoint path
           const response = await fetch(`${this.baseUrl}/v1/users/${encodeURIComponent(userId)}`, {
             method: 'GET',
             headers: {
@@ -199,7 +197,6 @@ export class PingIdentityMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -214,7 +211,6 @@ export class PingIdentityMCPServer {
           const skip = (args.skip as number) || 0;
           const policyType = args.policy_type as string | undefined;
 
-          // Finding #22: /v1/ in endpoint path
           let url = `${this.baseUrl}/v1/policies?limit=${limit}&skip=${skip}`;
           if (policyType) url += `&type=${encodeURIComponent(policyType)}`;
 
@@ -233,7 +229,6 @@ export class PingIdentityMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -249,7 +244,6 @@ export class PingIdentityMCPServer {
           const riskLevel = args.risk_level as string | undefined;
           const limit = (args.limit as number) || 50;
 
-          // Finding #22: /v1/ in endpoint path
           let url = `${this.baseUrl}/v1/risk/evaluations?time_period=${encodeURIComponent(timePeriod)}&limit=${limit}`;
           if (userId) url += `&user_id=${encodeURIComponent(userId)}`;
           if (riskLevel) url += `&risk_level=${encodeURIComponent(riskLevel)}`;
@@ -269,7 +263,6 @@ export class PingIdentityMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -285,7 +278,6 @@ export class PingIdentityMCPServer {
           const limit = (args.limit as number) || 100;
           const skip = (args.skip as number) || 0;
 
-          // Finding #22: /v1/ in endpoint path
           let url = `${this.baseUrl}/v1/sessions?limit=${limit}&skip=${skip}`;
           if (userId) url += `&user_id=${encodeURIComponent(userId)}`;
           if (status) url += `&status=${encodeURIComponent(status)}`;
@@ -305,7 +297,6 @@ export class PingIdentityMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();

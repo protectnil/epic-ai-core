@@ -1,6 +1,9 @@
 /**
  * CrowdStrike Falcon MCP Server
  * Provides access to CrowdStrike Falcon REST API endpoints for threat detection and host management
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
 import { ToolDefinition, ToolResult } from './types.js';
@@ -182,7 +185,6 @@ export class CrowdStrikeMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try { data = await response.json(); } catch { throw new Error(`CrowdStrike returned non-JSON response (HTTP ${response.status})`); }
           return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
@@ -215,7 +217,6 @@ export class CrowdStrikeMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try { data = await response.json(); } catch { throw new Error(`CrowdStrike returned non-JSON response (HTTP ${response.status})`); }
           return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
@@ -246,7 +247,6 @@ export class CrowdStrikeMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try { data = await response.json(); } catch { throw new Error(`CrowdStrike returned non-JSON response (HTTP ${response.status})`); }
           return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
@@ -279,7 +279,6 @@ export class CrowdStrikeMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try { data = await response.json(); } catch { throw new Error(`CrowdStrike returned non-JSON response (HTTP ${response.status})`); }
           return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
@@ -316,7 +315,6 @@ export class CrowdStrikeMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try { data = await response.json(); } catch { throw new Error(`CrowdStrike returned non-JSON response (HTTP ${response.status})`); }
           return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };

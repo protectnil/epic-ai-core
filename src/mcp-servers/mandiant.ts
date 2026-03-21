@@ -2,22 +2,12 @@
  * Mandiant (Google) Threat Intelligence MCP Server Wrapper
  * REST API: https://api.intelligence.mandiant.com/v4
  * Auth: OAuth2 (client_credentials) with X-App-Name header
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
-interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-
-interface ToolResult {
-  content: Array<{ type: 'text'; text: string }>;
-  isError: boolean;
-}
+import { ToolDefinition, ToolResult } from './types.js';
 
 interface MandiantAuthConfig {
   clientId: string;

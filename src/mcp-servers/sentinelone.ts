@@ -1,6 +1,9 @@
 /**
  * SentinelOne MCP Server
  * Provides access to SentinelOne REST API endpoints for threat management and agent control
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
 import { ToolDefinition, ToolResult } from './types.js';
@@ -141,7 +144,6 @@ export class SentinelOneMCPServer {
 
           const response = await fetch(url, { method: 'GET', headers });
 
-          // Finding #21: Static API token — on 401 throw clear error (no auto-refresh possible)
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -153,7 +155,6 @@ export class SentinelOneMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -174,7 +175,6 @@ export class SentinelOneMCPServer {
             { method: 'GET', headers }
           );
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -186,7 +186,6 @@ export class SentinelOneMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -208,7 +207,6 @@ export class SentinelOneMCPServer {
 
           const response = await fetch(url, { method: 'GET', headers });
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -220,7 +218,6 @@ export class SentinelOneMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -241,7 +238,6 @@ export class SentinelOneMCPServer {
             { method: 'GET', headers }
           );
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -253,7 +249,6 @@ export class SentinelOneMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -283,7 +278,6 @@ export class SentinelOneMCPServer {
             }
           );
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -295,7 +289,6 @@ export class SentinelOneMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();

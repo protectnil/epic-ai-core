@@ -3,22 +3,12 @@
  * Integrates ServiceNow GRC REST API for risk, compliance, and policy management
  * Base URL: https://{instance}.service-now.com/api/now
  * Auth: Basic auth or OAuth2 bearer token
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
-interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-
-interface ToolResult {
-  content: Array<{ type: 'text'; text: string }>;
-  isError: boolean;
-}
+import { ToolDefinition, ToolResult } from './types.js';
 
 interface ServiceNowGRCConfig {
   instance: string;

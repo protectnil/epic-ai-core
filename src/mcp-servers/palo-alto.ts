@@ -1,3 +1,8 @@
+/**
+ * @epicai/core — Palo Alto Networks MCP Server
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
+ */
 import { ToolDefinition, ToolResult } from './types.js';
 
 export class PaloAltoMCPServer {
@@ -8,7 +13,6 @@ export class PaloAltoMCPServer {
   constructor(config: { baseUrl: string; apiKey: string }) {
     this.baseUrl = config.baseUrl;
     this.apiKey = config.apiKey;
-    // Finding #1/#10: API key moved to X-PAN-KEY header — never in URL query string.
     this.headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -126,7 +130,6 @@ export class PaloAltoMCPServer {
     const limit = (args.limit as number) || 50;
     const offset = (args.offset as number) || 0;
 
-    // Finding #1: No ?key= in URL; key is in X-PAN-KEY header set at construction.
     const url = `${this.baseUrl}/config/devices/entry/name/localhost/vsys/entry/name/${encodeURIComponent(location)}/security/rules?limit=${limit}&offset=${offset}`;
 
     const response = await fetch(url, {
@@ -138,7 +141,6 @@ export class PaloAltoMCPServer {
       throw new Error(`Palo Alto API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19: wrap response.json() in try-catch
     let data: unknown;
     try {
       data = await response.json();
@@ -152,7 +154,6 @@ export class PaloAltoMCPServer {
     const threatId = args.threat_id as string | undefined;
     const category = args.category as string | undefined;
 
-    // Finding #1: No ?key= in URL.
     let url = `${this.baseUrl}/config/devices/entry/name/localhost/vsys/entry/name/vsys1/threat`;
     const params = new URLSearchParams();
     if (threatId) params.append('threat-id', threatId);
@@ -166,7 +167,6 @@ export class PaloAltoMCPServer {
       throw new Error(`Palo Alto API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Palo Alto returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
@@ -175,7 +175,6 @@ export class PaloAltoMCPServer {
   private async listUrlCategories(args: Record<string, unknown>): Promise<ToolResult> {
     const limit = (args.limit as number) || 100;
 
-    // Finding #1: No ?key= in URL.
     const url = `${this.baseUrl}/config/devices/entry/name/localhost/vsys/entry/name/vsys1/url-category?limit=${limit}`;
 
     const response = await fetch(url, { method: 'GET', headers: this.headers });
@@ -184,7 +183,6 @@ export class PaloAltoMCPServer {
       throw new Error(`Palo Alto API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Palo Alto returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
@@ -193,7 +191,6 @@ export class PaloAltoMCPServer {
   private async getGlobalProtectUsers(args: Record<string, unknown>): Promise<ToolResult> {
     const status = args.status as string | undefined;
 
-    // Finding #1/#7: No ?key= in URL; status is encodeURIComponent-encoded.
     let url = `${this.baseUrl}/config/devices/entry/name/localhost/vsys/entry/name/vsys1/global-protect/users`;
     if (status) {
       url += `?status=${encodeURIComponent(status)}`;
@@ -205,14 +202,12 @@ export class PaloAltoMCPServer {
       throw new Error(`Palo Alto API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Palo Alto returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
   }
 
   private async getSystemInfo(_args: Record<string, unknown>): Promise<ToolResult> {
-    // Finding #1: No ?key= in URL.
     const url = `${this.baseUrl}/config/system`;
 
     const response = await fetch(url, { method: 'GET', headers: this.headers });
@@ -221,7 +216,6 @@ export class PaloAltoMCPServer {
       throw new Error(`Palo Alto API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Palo Alto returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };

@@ -1,6 +1,9 @@
 /**
  * Sophos Central MCP Server
  * Provides access to Sophos Central REST API endpoints for alert and endpoint management
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
 import { ToolDefinition, ToolResult } from './types.js';
@@ -145,7 +148,6 @@ export class SophosMCPServer {
 
           const response = await fetch(url, { method: 'GET', headers });
 
-          // Finding #21: Static bearer token — on 401 throw clear error (no auto-refresh possible)
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -157,7 +159,6 @@ export class SophosMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -178,7 +179,6 @@ export class SophosMCPServer {
             headers,
           });
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -190,7 +190,6 @@ export class SophosMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -213,7 +212,6 @@ export class SophosMCPServer {
 
           const response = await fetch(url, { method: 'GET', headers });
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -225,7 +223,6 @@ export class SophosMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -246,7 +243,6 @@ export class SophosMCPServer {
             { method: 'GET', headers }
           );
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -258,7 +254,6 @@ export class SophosMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();
@@ -285,7 +280,6 @@ export class SophosMCPServer {
             }
           );
 
-          // Finding #21
           if (response.status === 401) {
             throw new Error('Auth token expired. Provide a new token.');
           }
@@ -297,7 +291,6 @@ export class SophosMCPServer {
             };
           }
 
-          // Finding #19
           let data: unknown;
           try {
             data = await response.json();

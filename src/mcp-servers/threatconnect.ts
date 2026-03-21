@@ -2,20 +2,14 @@
  * ThreatConnect REST API MCP Server Wrapper
  * REST API: https://api.threatconnect.com/v3
  * Auth: HMAC signature (TC-Token or timestamp-based HMAC)
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
+import { ToolDefinition, ToolResult } from './types.js';
+
 import crypto from 'crypto';
-
-interface ToolDefinition {
-  name: string;
-  description: string;
-  parameters: Record<string, unknown>;
-}
-
-interface ToolResult {
-  content: unknown;
-  isError: boolean;
-}
 
 interface ThreatConnectAuthConfig {
   accessId: string;
@@ -76,7 +70,7 @@ export class ThreatConnectMCPServer {
         name: 'list_indicators',
         description:
           'List indicators with optional filtering and pagination',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             filter: {
@@ -99,7 +93,7 @@ export class ThreatConnectMCPServer {
       {
         name: 'get_indicator',
         description: 'Retrieve detailed information about a specific indicator',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             indicator_id: {
@@ -113,7 +107,7 @@ export class ThreatConnectMCPServer {
       {
         name: 'list_groups',
         description: 'List threat groups (campaigns, incidents, adversaries)',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             group_type: {
@@ -137,7 +131,7 @@ export class ThreatConnectMCPServer {
       {
         name: 'search_intelligence',
         description: 'Search threat intelligence across all data types',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             query: {
@@ -161,7 +155,7 @@ export class ThreatConnectMCPServer {
       {
         name: 'list_playbooks',
         description: 'List available automation playbooks',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             enabled: {
@@ -229,18 +223,18 @@ export class ThreatConnectMCPServer {
 
         default:
           return {
-            content: `Unknown tool: ${name}`,
+            content: [{ type: 'text' as const, text: `Unknown tool: ${name}` }],
             isError: true,
           };
       }
 
       return {
-        content: result,
+        content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
         isError: false,
       };
     } catch (error) {
       return {
-        content: `Error calling ${name}: ${error instanceof Error ? error.message : String(error)}`,
+        content: [{ type: 'text' as const, text: `Error calling ${name}: ${error instanceof Error ? error.message : String(error)}` }],
         isError: true,
       };
     }

@@ -1,3 +1,8 @@
+/**
+ * @epicai/core — Cisco Secure MCP Server
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
+ */
 import { ToolDefinition, ToolResult } from './types.js';
 
 export class CiscoSecureMCPServer {
@@ -14,7 +19,6 @@ export class CiscoSecureMCPServer {
     umbrellaApiKey?: string;
     firewallToken?: string;
   }) {
-    // Finding #12: Validate that at least one credential set is present at construction time
     const hasToken = !!config.firewallToken;
     const hasUserPass = !!(config.firewallUsername && config.firewallPassword);
     if (!hasToken && !hasUserPass) {
@@ -201,7 +205,6 @@ export class CiscoSecureMCPServer {
       throw new Error(`Cisco Secure API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -225,7 +228,6 @@ export class CiscoSecureMCPServer {
       throw new Error(`Cisco Secure API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -249,7 +251,6 @@ export class CiscoSecureMCPServer {
       throw new Error(`Cisco Secure API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -282,7 +283,6 @@ export class CiscoSecureMCPServer {
       throw new Error(`Cisco Secure Umbrella API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -312,7 +312,6 @@ export class CiscoSecureMCPServer {
       throw new Error(`Cisco Secure AMP API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();

@@ -5,10 +5,8 @@ export class ZscalerMCPServer {
   private readonly username: string;
   private readonly apiKey: string;
   private sessionCookie: string | null = null;
-  // Finding #9: track session expiry; Zscaler sessions default to 30 minutes
   private sessionExpiry: number = 0;
   private static readonly SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
-  // Finding #9: password stored temporarily; nulled after first successful auth
   private password: string | null;
 
   constructor(config: {
@@ -104,7 +102,6 @@ export class ZscalerMCPServer {
 
   async callTool(name: string, args: Record<string, unknown>): Promise<ToolResult> {
     try {
-      // Finding #9: Ensure valid session; re-auth if expired
       if (!this.sessionCookie || Date.now() >= this.sessionExpiry) {
         await this.authenticate();
       }
@@ -135,10 +132,12 @@ export class ZscalerMCPServer {
   }
 
   /**
-   * Finding #9: On 401, clear session cookie and re-authenticate once, then retry.
-   * NOTE (Finding #17): Zscaler uses password-based cookie auth.
+   * Zscaler uses password-based cookie auth.
    * This is required by the Zscaler Internet Access API — no OAuth2 alternative exists.
-   */
+   
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
+ */
   private async withReauth<T>(fn: () => Promise<T>): Promise<T> {
     try {
       return await fn();
@@ -185,9 +184,7 @@ export class ZscalerMCPServer {
     }
 
     this.sessionCookie = cookies.split(';')[0];
-    // Finding #9: record expiry
     this.sessionExpiry = Date.now() + ZscalerMCPServer.SESSION_TTL_MS;
-    // Finding #9: null out password after first successful auth
     this.password = null;
   }
 
@@ -212,7 +209,6 @@ export class ZscalerMCPServer {
       throw new Error(`Zscaler API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -237,7 +233,6 @@ export class ZscalerMCPServer {
       throw new Error(`Zscaler API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -265,7 +260,6 @@ export class ZscalerMCPServer {
       throw new Error(`Zscaler API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -289,7 +283,6 @@ export class ZscalerMCPServer {
       throw new Error(`Zscaler API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();
@@ -314,7 +307,6 @@ export class ZscalerMCPServer {
       throw new Error(`Zscaler API error: ${response.status} ${response.statusText}`);
     }
 
-    // Finding #19
     let data: unknown;
     try {
       data = await response.json();

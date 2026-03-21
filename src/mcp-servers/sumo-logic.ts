@@ -1,13 +1,10 @@
-interface ToolDefinition {
-  name: string;
-  description: string;
-  parameters: Record<string, unknown>;
-}
+/**
+ * @epicai/core — Sumo Logic MCP Server
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
+ */
 
-interface ToolResult {
-  content: unknown;
-  isError: boolean;
-}
+import { ToolDefinition, ToolResult } from './types.js';
 
 export class SumoLogicMCPServer {
   private readonly baseUrl: string;
@@ -33,7 +30,7 @@ export class SumoLogicMCPServer {
       {
         name: 'create_search_job',
         description: 'Create a new search job in Sumo Logic',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             query: {
@@ -59,7 +56,7 @@ export class SumoLogicMCPServer {
       {
         name: 'get_search_results',
         description: 'Retrieve results from a search job',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             search_id: {
@@ -81,7 +78,7 @@ export class SumoLogicMCPServer {
       {
         name: 'list_monitors',
         description: 'List all monitors in Sumo Logic',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             offset: {
@@ -102,7 +99,7 @@ export class SumoLogicMCPServer {
       {
         name: 'get_collector_status',
         description: 'Get status of a log collector',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             collector_id: {
@@ -116,7 +113,7 @@ export class SumoLogicMCPServer {
       {
         name: 'list_dashboards',
         description: 'List all dashboards in Sumo Logic',
-        parameters: {
+        inputSchema: {
           type: 'object',
           properties: {
             offset: {
@@ -172,15 +169,13 @@ export class SumoLogicMCPServer {
           );
         default:
           return {
-            content: { error: `Unknown tool: ${name}` },
+            content: [{ type: 'text' as const, text: `Unknown tool: ${name}` }],
             isError: true,
           };
       }
     } catch (error) {
       return {
-        content: {
-          error: error instanceof Error ? error.message : String(error),
-        },
+        content: [{ type: 'text' as const, text: error instanceof Error ? error.message : String(error) }],
         isError: true,
       };
     }
@@ -216,7 +211,7 @@ export class SumoLogicMCPServer {
 
     const data = await response.json();
     return {
-      content: data,
+      content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       isError: false,
     };
   }
@@ -246,7 +241,7 @@ export class SumoLogicMCPServer {
 
     const data = await response.json();
     return {
-      content: data,
+      content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       isError: false,
     };
   }
@@ -280,7 +275,7 @@ export class SumoLogicMCPServer {
 
     const data = await response.json();
     return {
-      content: data,
+      content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       isError: false,
     };
   }
@@ -304,7 +299,7 @@ export class SumoLogicMCPServer {
 
     const data = await response.json();
     return {
-      content: data,
+      content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       isError: false,
     };
   }
@@ -338,7 +333,7 @@ export class SumoLogicMCPServer {
 
     const data = await response.json();
     return {
-      content: data,
+      content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       isError: false,
     };
   }

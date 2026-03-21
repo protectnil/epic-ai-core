@@ -2,22 +2,12 @@
  * Proofpoint Threat Protection REST API MCP Server Wrapper
  * REST API: https://tap-api-v2.proofpoint.com
  * Auth: Basic authentication (service_principal:secret)
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
-interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-
-interface ToolResult {
-  content: Array<{ type: 'text'; text: string }>;
-  isError: boolean;
-}
+import { ToolDefinition, ToolResult } from './types.js';
 
 interface ProofpointAuthConfig {
   servicePrincipal: string;

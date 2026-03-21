@@ -3,22 +3,12 @@
  * Integrates OneTrust REST API for privacy, compliance, and assessment management
  * Base URL: https://app.onetrust.com/api
  * Auth: Bearer token
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
-interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-
-interface ToolResult {
-  content: Array<{ type: 'text'; text: string }>;
-  isError: boolean;
-}
+import { ToolDefinition, ToolResult } from './types.js';
 
 interface OneTrustConfig {
   apiKey: string;

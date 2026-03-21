@@ -1,22 +1,12 @@
 /**
  * Wiz Security REST API MCP Server Wrapper
  * Provides tools for vulnerability and compliance management via Wiz
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
-interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-
-interface ToolResult {
-  content: Array<{ type: 'text'; text: string }>;
-  isError: boolean;
-}
+import { ToolDefinition, ToolResult } from './types.js';
 
 interface WizConfig {
   clientId: string;
@@ -398,11 +388,7 @@ export class WizMCPServer {
     };
   }
 
-  /**
-   * Parameterized graph query — replaces the removed searchGraph tool.
-   * Accepts a resourceType enum value instead of arbitrary user GraphQL,
-   * eliminating the unrestricted SSRF/injection surface.
-   */
+  /** Parameterized graph query — accepts a resourceType enum value. */
   private async queryGraph(
     headers: Record<string, string>,
     args: Record<string, unknown>

@@ -1,10 +1,13 @@
+/**
+ * @epicai/core — Microsoft Sentinel MCP Server
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
+ */
 import { ToolDefinition, ToolResult } from './types.js';
 
-// Finding #18: UUID / safe-name validation regexes
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SAFE_NAME_RE = /^[a-zA-Z0-9_-]+$/;
 
-// Finding #3: OData single-quote escape helper
 function escapeOData(value: string): string {
   return value.replace(/'/g, "''");
 }
@@ -19,7 +22,6 @@ export class SentinelMCPServer {
     workspaceName: string;
     bearerToken: string;
   }) {
-    // Finding #18: Validate subscriptionId, resourceGroup, workspaceName before embedding in URL
     if (!UUID_RE.test(config.subscriptionId)) {
       throw new Error('SentinelMCPServer: subscriptionId must be a valid UUID');
     }
@@ -34,14 +36,12 @@ export class SentinelMCPServer {
       `https://management.azure.com/subscriptions/${config.subscriptionId}/` +
       `resourceGroups/${config.resourceGroup}/providers/Microsoft.OperationalInsights/workspaces/${config.workspaceName}`;
 
-    // Finding #2: api-version is a query param, not a header — removed from headers.
     this.headers = {
       Authorization: `Bearer ${config.bearerToken}`,
       'Content-Type': 'application/json',
     };
   }
 
-  // Finding #2: Helper to append api-version to every URL
   private withApiVersion(url: string): string {
     const sep = url.includes('?') ? '&' : '?';
     return `${url}${sep}api-version=2022-07-01-preview`;
@@ -174,25 +174,21 @@ export class SentinelMCPServer {
 
   private async listIncidents(filter?: string, orderby?: string, top?: number): Promise<ToolResult> {
     const params = new URLSearchParams();
-    // Finding #3: escape single-quotes before interpolating into OData filter
     if (filter) params.append('$filter', escapeOData(filter));
     if (orderby) params.append('$orderby', orderby);
     if (top) params.append('$top', String(top));
 
-    // Finding #2: api-version appended to URL as query param
     const baseEndpoint = `${this.baseUrl}/providers/Microsoft.SecurityInsights/incidents?${params}`;
     const response = await fetch(this.withApiVersion(baseEndpoint), { method: 'GET', headers: this.headers });
 
     if (!response.ok) throw new Error(`Sentinel API error: ${response.status} ${response.statusText}`);
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Sentinel returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
   }
 
   private async getIncident(incidentId: string): Promise<ToolResult> {
-    // Finding #2: api-version appended
     const response = await fetch(
       this.withApiVersion(`${this.baseUrl}/providers/Microsoft.SecurityInsights/incidents/${encodeURIComponent(incidentId)}`),
       { method: 'GET', headers: this.headers }
@@ -200,7 +196,6 @@ export class SentinelMCPServer {
 
     if (!response.ok) throw new Error(`Sentinel API error: ${response.status} ${response.statusText}`);
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Sentinel returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
@@ -208,17 +203,14 @@ export class SentinelMCPServer {
 
   private async listAlerts(filter?: string, top?: number): Promise<ToolResult> {
     const params = new URLSearchParams();
-    // Finding #3: escape single-quotes
     if (filter) params.append('$filter', escapeOData(filter));
     if (top) params.append('$top', String(top));
 
-    // Finding #2: api-version appended
     const baseEndpoint = `${this.baseUrl}/providers/Microsoft.SecurityInsights/alertRules?${params}`;
     const response = await fetch(this.withApiVersion(baseEndpoint), { method: 'GET', headers: this.headers });
 
     if (!response.ok) throw new Error(`Sentinel API error: ${response.status} ${response.statusText}`);
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Sentinel returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
@@ -227,7 +219,6 @@ export class SentinelMCPServer {
   private async runHuntingQuery(query: string, timespan?: string): Promise<ToolResult> {
     const requestBody = { query, timespan: timespan || 'PT24H' };
 
-    // Finding #2: api-version appended
     const response = await fetch(
       this.withApiVersion(`${this.baseUrl}/api/query`),
       { method: 'POST', headers: this.headers, body: JSON.stringify(requestBody) }
@@ -235,7 +226,6 @@ export class SentinelMCPServer {
 
     if (!response.ok) throw new Error(`Sentinel API error: ${response.status} ${response.statusText}`);
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Sentinel returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };
@@ -244,17 +234,14 @@ export class SentinelMCPServer {
   private async listWatchlists(filter?: string): Promise<ToolResult> {
     const params = new URLSearchParams();
     if (filter) {
-      // Finding #3: escape single-quotes in OData filter value
       params.append('$filter', `contains(name,'${escapeOData(filter)}')`);
     }
 
-    // Finding #2: api-version appended
     const baseEndpoint = `${this.baseUrl}/providers/Microsoft.SecurityInsights/watchlists?${params}`;
     const response = await fetch(this.withApiVersion(baseEndpoint), { method: 'GET', headers: this.headers });
 
     if (!response.ok) throw new Error(`Sentinel API error: ${response.status} ${response.statusText}`);
 
-    // Finding #19
     let data: unknown;
     try { data = await response.json(); } catch { throw new Error(`Sentinel returned non-JSON response (HTTP ${response.status})`); }
     return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }], isError: false };

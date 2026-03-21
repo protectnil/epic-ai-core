@@ -1,22 +1,12 @@
 /**
  * Recorded Future REST API MCP Server Wrapper
  * Provides tools for threat intelligence and risk scoring via Recorded Future
+ 
+ * Built on the Epic AI® Intelligence Platform
+ * Copyright 2026 protectNIL Inc. Apache-2.0
  */
 
-interface ToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: {
-    type: string;
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-
-interface ToolResult {
-  content: Array<{ type: string; text: string }>;
-  isError: boolean;
-}
+import { ToolDefinition, ToolResult } from './types.js';
 
 interface RecordedFutureConfig {
   apiToken: string;
