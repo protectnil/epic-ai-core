@@ -209,7 +209,12 @@ export class SumoLogicMCPServer {
       );
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       isError: false,
@@ -239,7 +244,12 @@ export class SumoLogicMCPServer {
       );
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       isError: false,
@@ -273,7 +283,12 @@ export class SumoLogicMCPServer {
       );
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       isError: false,
@@ -297,7 +312,12 @@ export class SumoLogicMCPServer {
       );
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       isError: false,
@@ -331,7 +351,12 @@ export class SumoLogicMCPServer {
       );
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }],
       isError: false,

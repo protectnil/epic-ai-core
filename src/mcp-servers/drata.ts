@@ -174,7 +174,12 @@ export class DrataMCPServer {
       throw new Error(`Drata API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
       isError: false,
@@ -196,7 +201,12 @@ export class DrataMCPServer {
       throw new Error(`Drata API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
       isError: false,
@@ -219,7 +229,12 @@ export class DrataMCPServer {
       throw new Error(`Drata API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
       isError: false,
@@ -239,7 +254,12 @@ export class DrataMCPServer {
       throw new Error(`Drata API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
       isError: false,
@@ -261,7 +281,12 @@ export class DrataMCPServer {
       throw new Error(`Drata API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
       isError: false,

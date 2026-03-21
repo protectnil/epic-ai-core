@@ -185,7 +185,12 @@ export class RecordedFutureMCPServer {
       headers,
     });
 
-    const data = await response.json() as Record<string, unknown>;
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
       isError: !response.ok,
@@ -207,7 +212,12 @@ export class RecordedFutureMCPServer {
       }
     );
 
-    const data = await response.json() as Record<string, unknown>;
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
       isError: !response.ok,
@@ -229,7 +239,12 @@ export class RecordedFutureMCPServer {
       headers,
     });
 
-    const data = await response.json() as Record<string, unknown>;
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
       isError: !response.ok,
@@ -251,7 +266,12 @@ export class RecordedFutureMCPServer {
       }
     );
 
-    const data = await response.json() as Record<string, unknown>;
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
       isError: !response.ok,
@@ -274,7 +294,12 @@ export class RecordedFutureMCPServer {
       headers,
     });
 
-    const data = await response.json() as Record<string, unknown>;
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     return {
       content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
       isError: !response.ok,

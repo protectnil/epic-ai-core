@@ -46,9 +46,14 @@ export class WizMCPServer {
       throw new Error(`Wiz OAuth failed: ${response.statusText}`);
     }
 
-    const data = await response.json() as { access_token: string; expires_in: number };
+    let data: { access_token: string; expires_in: number };
+    try {
+      data = await response.json() as { access_token: string; expires_in: number };
+    } catch {
+      throw new Error(`Non-JSON response (HTTP ${response.status})`);
+    }
     this.accessToken = data.access_token;
-    this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // Refresh 1min before expiry
+    this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000;
     return this.accessToken;
   }
 
