@@ -58,6 +58,8 @@ export { JSONResponse } from './transport/JSONResponse.js';
 // Observability
 export { ObservabilityEmitter } from './observability/EventEmitter.js';
 export type { LogLevel, LogEntry, EventCallback, LogCallback } from './observability/EventEmitter.js';
+export { RunTelemetryCollector } from './observability/RunTelemetry.js';
+export type { RunTelemetrySnapshot, RunTelemetryStep, RunTelemetryLog } from './observability/RunTelemetry.js';
 export { TokenTracker } from './observability/TokenTracker.js';
 export type { TokenUsage, CostEntry, CostSummary } from './observability/TokenTracker.js';
 export { createOTelEventCallback, createOTelLogCallback } from './observability/OpenTelemetry.js';

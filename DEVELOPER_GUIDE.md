@@ -812,6 +812,26 @@ emitter.onLog(ObservabilityEmitter.consoleLogger(['apiKey', 'token', 'password']
 
 `ObservabilityEmitter.consoleLogger()` writes structured JSON to `stderr` (not `stdout`) to avoid polluting application output. It is intended for local development and debugging — production deployments should use a dedicated logging callback.
 
+### Run Telemetry Summary
+
+When you need a single human-readable snapshot of one agent run, attach a `RunTelemetryCollector` to the same event/log stream:
+
+```typescript
+import { ObservabilityEmitter, RunTelemetryCollector } from '@epicai/core';
+
+const emitter = new ObservabilityEmitter();
+const telemetry = new RunTelemetryCollector();
+
+const detach = telemetry.attach(emitter);
+
+// ... run the agent ...
+
+console.log(telemetry.format());
+detach();
+```
+
+The collector keeps recent stream events and log entries, counts event types, and produces a compact summary that is useful during local CPU and GPU verification runs.
+
 ### Token and Cost Tracking
 
 ```typescript

@@ -349,6 +349,20 @@ tracker.record({ model: 'gpt-4.1', promptTokens: 1200, completionTokens: 340, co
 const summary = tracker.summary(); // total tokens, total cost, per-model breakdown
 ```
 
+For a compact human-readable snapshot of one run, attach a `RunTelemetryCollector` to the same event/log stream:
+
+```typescript
+import { RunTelemetryCollector } from '@epicai/core';
+
+const telemetry = new RunTelemetryCollector();
+const detach = telemetry.attach(emitter);
+
+// ... run the agent ...
+
+console.log(telemetry.format());
+detach();
+```
+
 ### Resilience
 
 - **Rate limiting** — token bucket per server with configurable burst capacity (`RateLimiter`)
