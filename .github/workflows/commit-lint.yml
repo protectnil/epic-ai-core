@@ -1,0 +1,58 @@
+name: Commit Message Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit messages
+        run: |
+          FAILED=0
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            COMMITS=$(git log --format="%H" origin/${{ github.base_ref }}..${{ github.sha }} 2>/dev/null || echo "")
+          else
+            COMMITS=$(git log --format="%H" -10 HEAD)
+          fi
+
+          for SHA in $COMMITS; do
+            SUBJECT=$(git log --format="%s" -1 "$SHA")
+            BODY=$(git log --format="%b" -1 "$SHA")
+            BODY_FILTERED=$(echo "$BODY" | grep -v "^Co-Authored-By:" | grep -v "^$" || true)
+
+            if [ ${#SUBJECT} -gt 100 ]; then
+              echo "FAIL: Subject over 100 chars in $SHA"
+              echo "  Subject: $SUBJECT"
+              FAILED=1
+            fi
+
+            BODY_LINES=$(echo "$BODY_FILTERED" | grep -c "." || echo "0")
+            if [ "$BODY_LINES" -gt 3 ]; then
+              echo "FAIL: Body has $BODY_LINES lines (max 3) in $SHA"
+              echo "  Subject: $SUBJECT"
+              FAILED=1
+            fi
+
+            if echo "$SUBJECT $BODY" | grep -qiE "(Codex round|line [0-9]+|\.ts:[0-9]+|known limitation|trust boundary|sanitization gap)"; then
+              echo "FAIL: Internal reference detected in $SHA"
+              echo "  Subject: $SUBJECT"
+              FAILED=1
+            fi
+          done
+
+          if [ "$FAILED" -eq 1 ]; then
+            echo ""
+            echo "Commit message policy: one-line subject, no internals. See CLAUDE.md."
+            exit 1
+          fi
+
+          echo "All commit messages pass."
+
