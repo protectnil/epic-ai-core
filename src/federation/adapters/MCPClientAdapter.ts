@@ -129,6 +129,12 @@ export class MCPClientAdapter implements MCPAdapter {
       if (this.client) {
         await this.client.close();
       }
+      // If client.close() found _transport already nulled (e.g. onclose
+      // fired early), the transport's child process was never killed.
+      // Close the transport directly as a fallback.
+      if (this.transport) {
+        await this.transport.close();
+      }
     } finally {
       this.client = null;
       this.transport = null;

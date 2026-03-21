@@ -10,6 +10,7 @@ export default defineConfig({
   },
   test: {
     include: ['tests/**/*.test.ts'],
+    exclude: ['tests/integration/**'],  // Requires external services (Ollama). Run explicitly.
     testTimeout: 120000, // 2 min — CPU inference is slow
     hookTimeout: 60000,
   },
