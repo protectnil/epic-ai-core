@@ -120,7 +120,7 @@ export class HttpHarnessBackend implements HarnessBackend {
     const timeout = setTimeout(() => controller.abort(), PER_TOOL_TIMEOUT);
 
     try {
-      const result = await this.client.callTool({ name, arguments: args });
+      const result = await this.client.callTool({ name, arguments: args }, undefined, { signal: controller.signal });
       clearTimeout(timeout);
       const content = result.content;
       const isError = result.isError === true;

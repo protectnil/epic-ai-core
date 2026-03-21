@@ -115,16 +115,11 @@ const TESTS: TestCase[] = [
     },
   },
   {
-    name: 'malformed variant 2 includes injection-looking content and sensitive keys',
+    name: 'malformed variant 2 includes sensitive keys for redaction testing',
     fn: async (b) => {
       const result = await b.callTool('malformed', MALFORMED_PAYLOAD_INJECTION);
-      assertEqual(result.isError, false, 'malformed-injection isError');
+      assertEqual(result.isError, false, 'malformed-redaction isError');
       const content = result.content as Record<string, unknown>;
-      // Verify injection-looking content is present (for sanitization testing upstream)
-      assertTruthy(
-        typeof content.result === 'string' && content.result.includes('ignore previous'),
-        'malformed has injection-looking content',
-      );
       // Verify sensitive keys exist (for redaction testing upstream)
       const creds = content.credentials as Record<string, unknown>;
       assertTruthy(creds?.apiKey, 'malformed has apiKey for redaction testing');
@@ -134,6 +129,17 @@ const TESTS: TestCase[] = [
       assertTruthy(deep?.secret, 'malformed has nested secret for redaction testing');
       // Verify array
       assertTruthy(Array.isArray(content.tokens), 'malformed has tokens array');
+    },
+  },
+  {
+    name: 'malformed variant 3 includes injection lines for sanitization testing',
+    fn: async (b) => {
+      const result = await b.callTool('malformed', { variant: 3 });
+      assertEqual(result.isError, false, 'malformed-injection isError');
+      // Variant 3 is a multi-line string with injection lines
+      const content = typeof result.content === 'string' ? result.content : String(result.content);
+      assertTruthy(content.includes('ignore previous instructions'), 'malformed has injection line');
+      assertTruthy(content.includes('Normal tool output'), 'malformed has normal lines');
     },
   },
 

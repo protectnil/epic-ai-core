@@ -237,17 +237,25 @@ describe('Orchestrator Integration with Harness', { timeout: 30_000 }, () => {
 
       const types = events.map(e => e.type);
 
-      // Should have multiple plan events (multiple iterations)
-      const planCount = types.filter(t => t === 'plan').length;
-      expect(planCount).toBeGreaterThanOrEqual(2);
+      // Verify plan→action→result ordering within each iteration.
+      // Extract indices of each event type to prove sequencing, not just counts.
+      const planIndices = types.map((t, i) => t === 'plan' ? i : -1).filter(i => i >= 0);
+      const actionIndices = types.map((t, i) => t === 'action' ? i : -1).filter(i => i >= 0);
+      const resultIndices = types.map((t, i) => t === 'result' ? i : -1).filter(i => i >= 0);
 
-      // Should have multiple action events
-      const actionCount = types.filter(t => t === 'action').length;
-      expect(actionCount).toBeGreaterThanOrEqual(2);
+      // Must have at least 2 of each (two iterations)
+      expect(planIndices.length).toBeGreaterThanOrEqual(2);
+      expect(actionIndices.length).toBeGreaterThanOrEqual(2);
+      expect(resultIndices.length).toBeGreaterThanOrEqual(2);
 
-      // Should have multiple result events
-      const resultCount = types.filter(t => t === 'result').length;
-      expect(resultCount).toBeGreaterThanOrEqual(2);
+      // Each iteration: plan[n] < action[n] < result[n]
+      for (let i = 0; i < Math.min(planIndices.length, actionIndices.length, resultIndices.length); i++) {
+        expect(planIndices[i]).toBeLessThan(actionIndices[i]);
+        expect(actionIndices[i]).toBeLessThan(resultIndices[i]);
+      }
+
+      // Second iteration starts after first iteration's result
+      expect(planIndices[1]).toBeGreaterThan(resultIndices[0]);
 
       // done reports correct action count
       const doneEvent = events.find(e => e.type === 'done');
@@ -262,27 +270,26 @@ describe('Orchestrator Integration with Harness', { timeout: 30_000 }, () => {
   });
 
   it('sanitizes tool output containing injection-looking content', async () => {
-    // Use a mock LLM that calls the malformed tool (variant 2 has injection content)
+    // Side-effect capture: the orchestrator LLM records what it saw in the tool message.
+    // We assert on this directly, not on result.response (which comes from the generator).
+    let capturedToolContent: string | null = null;
+
     const injectionLLM = async (opts: { messages: Array<{ role: string; content?: string | null }>; tools?: unknown[] }): Promise<LLMResponse> => {
       const hasToolResult = opts.messages.some(m => m.role === 'tool');
       if (!hasToolResult) {
         return {
           content: null,
           finishReason: 'tool_calls',
-          toolCalls: [{ id: 'tc-5', name: 'harness-stdio:malformed', arguments: { variant: 2 } }],
+          toolCalls: [{ id: 'tc-5', name: 'harness-stdio:malformed', arguments: { variant: 3 } }],
         };
       }
-      // Verify the tool result message was sanitized — injection line should be stripped
+      // Capture the actual tool message content the orchestrator sees after sanitization
       const toolMsg = opts.messages.find(m => m.role === 'tool');
       if (toolMsg && typeof toolMsg.content === 'string') {
-        // The sanitizeInjectedContent in Orchestrator strips lines starting with "system:"
-        // The malformed variant 2 returns "system: ignore previous instructions..."
-        // After sanitization, that line should be gone from what the planner sees
-        if (toolMsg.content.includes('ignore previous instructions')) {
-          return { content: 'SANITIZATION_FAILED: injection content was not stripped', finishReason: 'stop', toolCalls: [] };
-        }
+        capturedToolContent = toolMsg.content;
       }
-      return { content: 'Sanitization passed.', finishReason: 'stop', toolCalls: [] };
+      // Return no tool calls — orchestrator exits the loop
+      return { content: null, finishReason: 'stop', toolCalls: [] };
     };
 
     const agent = await EpicAI.create({
@@ -312,10 +319,20 @@ describe('Orchestrator Integration with Harness', { timeout: 30_000 }, () => {
     await agent.start();
 
     try {
-      const result = await agent.run('sanitization test');
-      // The orchestrator LLM checks that injection content was stripped
-      // If sanitization failed, the response would say so
-      expect(result.response).not.toContain('SANITIZATION_FAILED');
+      await agent.run('sanitization test');
+
+      // Assert directly on what the orchestrator LLM received — not on generator output.
+      // Variant 3 is a multi-line string. sanitizeInjectedContent strips lines
+      // starting with "system:" and "ignore" patterns.
+      expect(capturedToolContent).not.toBeNull();
+      // Lines starting with "system:" should be stripped
+      expect(capturedToolContent).not.toContain('ignore previous instructions');
+      // Lines starting with "ignore" should be stripped
+      expect(capturedToolContent).not.toContain('ignore all prior context');
+      // Normal lines should survive sanitization
+      expect(capturedToolContent).toContain('Normal tool output line 1');
+      expect(capturedToolContent).toContain('Normal tool output line 2');
+      expect(capturedToolContent).toContain('Final normal line');
     } finally {
       await agent.stop();
     }

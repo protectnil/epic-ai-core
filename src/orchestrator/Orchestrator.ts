@@ -38,6 +38,26 @@ function sanitizeInjectedContent(content: string): string {
     .join('\n');
 }
 
+/**
+ * Extract text from MCP-style content arrays.
+ * MCP tools return content as [{type:"text", text:"..."}].
+ * This extracts the text values so sanitization operates on
+ * the actual content, not on JSON-stringified wrappers.
+ */
+function extractTextContent(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    const texts: string[] = [];
+    for (const item of content) {
+      if (typeof item === 'object' && item !== null && 'text' in item && typeof (item as Record<string, unknown>).text === 'string') {
+        texts.push((item as { text: string }).text);
+      }
+    }
+    if (texts.length > 0) return texts.join('\n');
+  }
+  return JSON.stringify(content);
+}
+
 export interface OrchestratorDeps {
   orchestratorLLM: LLMFunction;
   generatorLLM: LLMFunction;
@@ -250,7 +270,8 @@ export class Orchestrator {
 
         // Add tool result to message history for next iteration
         // Sanitize tool output before feeding back to planner — this is untrusted external data
-        const rawContent = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+        // Extract text from MCP content arrays so line-based sanitization works on actual content
+        const rawContent = extractTextContent(result.content);
         messages.push({
           role: 'tool',
           content: sanitizeInjectedContent(rawContent),
