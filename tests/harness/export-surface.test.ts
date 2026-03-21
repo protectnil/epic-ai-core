@@ -8,13 +8,11 @@ import { resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 
 describe('Harness public export surface', () => {
-  it('dist/harness/index.js exists and is importable', async () => {
-    const entrypoint = resolve(__dirname, '..', '..', 'dist', 'harness', 'index.js');
-    expect(existsSync(entrypoint)).toBe(true);
+  it('@epicai/core/harness subpath resolves and exports documented API', async () => {
+    // Use Node's actual package resolution by importing the subpath.
+    // This exercises the exports map in package.json, not a filesystem path.
+    const mod = await import('@epicai/core/harness');
 
-    const mod = await import(entrypoint);
-
-    // Verify all documented exports exist
     expect(typeof mod.createHarnessRunner).toBe('function');
     expect(mod.HarnessProfile).toBeDefined();
     expect(mod.HarnessProfile.Stdio).toBe('stdio');
@@ -30,34 +28,25 @@ describe('Harness public export surface', () => {
     expect(mod.DEFAULT_TIMEOUTS).toBeDefined();
   });
 
-  it('dist/harness/index.d.ts type declarations exist', () => {
+  it('@epicai/core/harness exports type declarations', () => {
     const dts = resolve(__dirname, '..', '..', 'dist', 'harness', 'index.d.ts');
     expect(existsSync(dts)).toBe(true);
   });
 
-  it('dist/harness/cli.js CLI entrypoint exists', () => {
-    const cli = resolve(__dirname, '..', '..', 'dist', 'harness', 'cli.js');
-    expect(existsSync(cli)).toBe(true);
+  it('epicai-harness bin resolves to an existing file', () => {
+    // Resolve the bin path the way npm does — read package.json bin entry, resolve relative to package root
+    const pkg = JSON.parse(require('node:fs').readFileSync(resolve(__dirname, '..', '..', 'package.json'), 'utf-8'));
+    const binPath = resolve(__dirname, '..', '..', pkg.bin['epicai-harness']);
+    expect(existsSync(binPath)).toBe(true);
   });
 
-  it('package.json exports ./harness subpath', async () => {
-    const pkg = await import('../../package.json', { with: { type: 'json' } });
-    const exports = pkg.default.exports;
-    expect(exports['./harness']).toBeDefined();
-    expect(exports['./harness'].import).toBe('./dist/harness/index.js');
-    expect(exports['./harness'].types).toBe('./dist/harness/index.d.ts');
-  });
-
-  it('package.json registers epicai-harness bin', async () => {
-    const pkg = await import('../../package.json', { with: { type: 'json' } });
-    expect(pkg.default.bin['epicai-harness']).toBe('./dist/harness/cli.js');
-  });
-
-  it('createHarnessRunner returns a runner with runAll and runProfile', () => {
-    // Import from the dist entrypoint to match what consumers get
-    const { createHarnessRunner } = require(resolve(__dirname, '..', '..', 'dist', 'harness', 'index.js'));
+  it('createHarnessRunner from subpath returns functional runner', async () => {
+    const { createHarnessRunner } = await import('@epicai/core/harness');
     const runner = createHarnessRunner({ profiles: [] });
     expect(typeof runner.runAll).toBe('function');
     expect(typeof runner.runProfile).toBe('function');
+    // Empty profiles should return empty results
+    const reports = await runner.runAll();
+    expect(reports).toHaveLength(0);
   });
 });

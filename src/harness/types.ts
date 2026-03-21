@@ -16,17 +16,15 @@ export const PER_SCENARIO_TIMEOUT = 30_000;
 export const HTTP_CONNECT_TIMEOUT = 2000;
 
 export interface HarnessTimeouts {
-  sleepMax: number;
+  /** Max time per individual tool call assertion (default 10s) */
   perTool: number;
+  /** Max time for an entire profile run (default 30s) */
   perScenario: number;
-  httpConnect: number;
 }
 
 export const DEFAULT_TIMEOUTS: HarnessTimeouts = {
-  sleepMax: SLEEP_MAX,
   perTool: PER_TOOL_TIMEOUT,
   perScenario: PER_SCENARIO_TIMEOUT,
-  httpConnect: HTTP_CONNECT_TIMEOUT,
 };
 
 export interface ToolInfo {
