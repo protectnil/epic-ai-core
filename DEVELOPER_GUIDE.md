@@ -1001,7 +1001,52 @@ Runs via `vitest run`. Includes unit tests, harness transport tests, orchestrato
 
 ### Integration suite (`npm run test:integration`)
 
-Runs `tests/integration/ollama.test.ts` against a real Ollama instance with `mistral:7b` pulled. Expects Ollama serving on `http://localhost:11434`. Tests skip gracefully if Ollama is not available, but the file must still be run in its own vitest invocation to avoid collection-phase hangs.
+Runs all tests under `tests/integration/` against real LLM inference. Expects Ollama serving on `http://localhost:11434` with `mistral:7b` pulled. Tests skip gracefully if Ollama is not available, but the files must still be run in their own vitest invocation to avoid collection-phase hangs.
+
+The integration suite is organized into three directories:
+
+#### `tests/integration/ollama.test.ts` — Basic Provider Tests (2 tests)
+
+Validates that `createOrchestratorLLM` can produce text responses and make tool calls against Ollama. Baseline smoke test for the provider abstraction.
+
+#### `tests/integration/air-gapped/` — Air-Gapped Full-Stack Tests (20 tests, ~35 LLM calls)
+
+Exercises the orchestrator with Ollama on both sides (orchestrator AND generator). Zero external API calls — all inference stays on the local machine. Designed for environments where no data may leave the infrastructure.
+
+| Section | Tests | What it validates |
+|---|---|---|
+| Tool Selection Accuracy | 5 | Correct tool selected from 8 available tools for threat hunting, identity checks, EDR queries, CVE lookups, and network flow analysis |
+| Multi-Step Chaining | 3 | Orchestrator iterates: search→identity check, list→isolate endpoint, three-step search→correlate→respond |
+| Argument Extraction | 3 | Enum values, compound filters, and structured fields extracted from natural language |
+| Stop Conditions | 2 | Direct response for general knowledge; stops after complete tool result instead of looping |
+| Throughput & Latency | 3 | Single inference latency, 5 concurrent requests (p50/p95), token generation rate (tokens/sec) |
+| Long Context | 2 | Correct routing with ~2K token system prompt + 10-message history; synthesis from large (~2K token) tool results without hallucination |
+| Adversarial | 2 | Prompt injection resistance; semantic tool selection despite misleading keyword overlap |
+
+**CPU runtime:** Expect 20–40 minutes depending on hardware (each LLM call takes 10–60s on CPU).
+**GPU runtime:** Under 5 minutes on an H100.
+
+```bash
+# Air-gapped only (requires Ollama, nothing else)
+npm run test:integration
+```
+
+#### `tests/integration/hybrid/` — Hybrid Cloud Handoff Tests (3 tests)
+
+Tests the full orchestrator→generator handoff: local Ollama SLM selects tools, cloud OpenAI LLM synthesizes the response from curated tool results. Validates the core architectural claim that tool schemas never reach the cloud LLM.
+
+| Test | Ollama calls | OpenAI calls | What it validates |
+|---|---|---|---|
+| Tool select → cloud synthesis | 1 | 1 | Orchestrator selects tool, generator produces actionable briefing from tool result |
+| Data sovereignty verification | 1 | 1 | Generator messages contain zero tool schema keywords; tool definitions stay local |
+| Multi-step + cloud synthesis | 2 | 1 | Two-step orchestrator loop, generator synthesizes executive briefing from all results |
+
+**Gated on `OPENAI_API_KEY`.** Tests skip gracefully if the env var is absent. Cost per run: ~$0.01 in OpenAI API calls.
+
+```bash
+# Full integration suite (air-gapped + hybrid if OPENAI_API_KEY is set)
+OPENAI_API_KEY=sk-... npm run test:integration
+```
 
 ### Standalone harness check (`npm run test:harness`)
 
