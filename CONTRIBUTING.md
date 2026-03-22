@@ -1,6 +1,6 @@
-# Contributing to Epic AI Core
+# Contributing to Epic AI® IVA Core
 
-Thank you for your interest in contributing to the Epic AI® Zero LLM Context MCP Orchestrator.
+Thank you for your interest in contributing to Epic AI® IVA Core — the Zero LLM Context MCP Orchestrator for Intelligent Virtual Assistants.
 
 ## Getting Started
 

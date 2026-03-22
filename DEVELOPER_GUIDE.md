@@ -1,11 +1,11 @@
-# Epic AI® Core — Developer Guide
+# Epic AI® IVA Core — Developer Guide
 
 **SDK:** `@epicai/core`
-**Version:** 0.1.2
+**Version:** 0.2.0
 **License:** Apache 2.0
 **Runtime:** Node.js >= 20.0.0, TypeScript 5.3+
 
-Epic AI® Core is an Intelligent Virtual Assistant (IVA) framework for cybersecurity that federates across multiple MCP servers. The SDK's orchestrator/generator architecture keeps tool schemas, MCP server topology, and intermediate tool results on your local SLM — only curated context reaches the cloud LLM. Custom adapters and application-level code operate outside this boundary. This guide covers every layer of the SDK.
+Epic AI® IVA Core is an Intelligent Virtual Assistant (IVA) platform that federates across multiple MCP servers. A local small language model (SLM) handles all tool selection, routing, and governance — keeping tool schemas, server topology, and intermediate results off the cloud LLM entirely. The cloud LLM receives only curated context for response synthesis. 113 pre-built adapters span security, DevOps, cloud infrastructure, observability, productivity, AI/ML, and business operations. This guide covers every layer of the SDK.
 
 ---
 
@@ -68,10 +68,10 @@ const agent = await EpicAI.create({
     },
   },
   persona: {
-    name: 'praetor',
+    name: 'sentinel',
     tone: 'commanding',
     domain: 'cybersecurity',
-    systemPrompt: 'You are the Praetor, a sovereign cybersecurity intelligence officer.',
+    systemPrompt: 'You are a sovereign cybersecurity intelligence officer.',
   },
   audit: { store: 'memory', integrity: 'sha256-chain' },
 });
@@ -84,7 +84,7 @@ await agent.stop();
 
 ## Architecture
 
-Epic AI Core separates concerns into five integrated layers, plus orchestration, transport, resilience, and observability:
+Epic AI® IVA Core separates concerns into five integrated layers, plus orchestration, transport, resilience, and observability:
 
 ```
 User Query
@@ -119,11 +119,11 @@ The orchestrator (local SLM) handles all tool selection and invocation. The gene
 
 #### Data Sovereignty
 
-The orchestrator/generator split is a security architecture, not just a performance optimization. The local SLM (orchestrator) holds all tool schemas, MCP server connection details, and intermediate tool results. The cloud LLM (generator) receives only sanitized, curated context for response synthesis. This means:
+The orchestrator/generator split is a data sovereignty architecture, not just a performance optimization. The local SLM (orchestrator) holds all tool schemas, MCP server connection details, and intermediate tool results. The cloud LLM (generator) receives only sanitized, curated context for response synthesis. This means:
 
 - Tool definitions never transit a third-party API
 - MCP server connection details (URLs, auth tokens, internal hostnames) stay local
-- Raw security telemetry from vendor platforms (Splunk queries, CrowdStrike detections, Vault secrets) is processed locally and only summarized results reach the generator
+- Raw data from connected platforms (Splunk queries, CrowdStrike detections, Vault secrets, Jira tickets, Salesforce records, AWS events) is processed locally and only summarized results reach the generator
 
 For fully air-gapped deployments, set the generator to `provider: 'ollama'` and both the orchestrator and generator run locally with zero external network calls.
 
@@ -377,7 +377,7 @@ const decision = await autonomy.evaluate({
   tool: 'delete',
   server: 'vault',
   args: { path: 'secret/prod-keys' },
-  persona: 'praetor',
+  persona: 'sentinel',
   timestamp: new Date(),
   priorActions: [],
 });
@@ -403,12 +403,12 @@ Policies are evaluated in priority order (highest first). First match wins.
 
 ```typescript
 // Via the agent
-await agent.approve('action-uuid', { approver: 'ciso@corp.com' });
-await agent.deny('action-uuid', { approver: 'ciso@corp.com', reason: 'Out of change window' });
+await agent.approve('action-uuid', { approver: 'ops@corp.com' });
+await agent.deny('action-uuid', { approver: 'ops@corp.com', reason: 'Out of change window' });
 
 // Via TieredAutonomy directly
-await autonomy.approve('action-uuid', 'ciso@corp.com');
-await autonomy.deny('action-uuid', 'ciso@corp.com', 'Not authorized');
+await autonomy.approve('action-uuid', 'ops@corp.com');
+await autonomy.deny('action-uuid', 'ops@corp.com', 'Not authorized');
 
 // List pending
 const pending = await autonomy.pending();
@@ -441,26 +441,61 @@ import { PersonaManager } from '@epicai/core';
 const persona = new PersonaManager();
 
 persona.register({
-  name: 'praetor',
+  name: 'sentinel',
   tone: 'commanding',
   domain: 'cybersecurity',
-  systemPrompt: 'You are the Praetor, a sovereign threat intelligence officer.',
+  systemPrompt: 'You are a sovereign threat intelligence officer.',
   vocabulary: { host: 'endpoint', user: 'principal' },
   constraints: ['Never speculate beyond available evidence.', 'Cite all source servers.'],
 });
 
 persona.register({
-  name: 'analyst',
-  tone: 'conversational',
-  domain: 'cybersecurity',
-  systemPrompt: 'You are a junior SOC analyst assisting with triage.',
+  name: 'ops-lead',
+  tone: 'direct',
+  domain: 'devops',
+  systemPrompt: 'You are a DevOps lead managing infrastructure across AWS and Kubernetes.',
+});
+
+persona.register({
+  name: 'deal-desk',
+  tone: 'professional',
+  domain: 'sales',
+  systemPrompt: 'You are a deal desk analyst. Pull pipeline data from Salesforce, flag stalled deals, and draft follow-up actions.',
+});
+
+persona.register({
+  name: 'controller',
+  tone: 'precise',
+  domain: 'finance',
+  systemPrompt: 'You are a financial controller. Reconcile transactions across Stripe, QuickBooks, and Plaid. Flag discrepancies.',
+});
+
+persona.register({
+  name: 'chief',
+  tone: 'executive',
+  domain: 'leadership',
+  systemPrompt: 'You are the CEO\'s executive assistant. Surface KPIs from Salesforce, Stripe, and Jira. Summarize what needs attention today.',
+});
+
+persona.register({
+  name: 'pm',
+  tone: 'structured',
+  domain: 'product',
+  systemPrompt: 'You are a product manager. Track feature velocity in Jira, surface customer feedback from Zendesk, and flag blocked epics.',
+});
+
+persona.register({
+  name: 'people-ops',
+  tone: 'empathetic',
+  domain: 'hr',
+  systemPrompt: 'You are an HR business partner. Monitor onboarding status, PTO balances, and open requisitions across Google Workspace and Notion.',
 });
 ```
 
 ### Switching Personas
 
 ```typescript
-persona.switch('analyst');
+persona.switch('controller');
 const prompt = persona.buildSystemPrompt({ memories: [], tools: [] });
 ```
 
@@ -513,6 +548,7 @@ Each result includes `fusionSources` showing which retrieval paths contributed a
 await retriever.index([
   { id: 'doc-1', content: 'Threat report...', metadata: { source: 'splunk' } },
   { id: 'doc-2', content: 'Vulnerability scan...', metadata: { source: 'qualys' } },
+  { id: 'doc-3', content: 'Deployment runbook...', metadata: { source: 'confluence' } },
 ]);
 ```
 
@@ -554,13 +590,20 @@ await memory.etch('user-123', {
   importance: 'high',
   metadata: { source: 'crowdstrike', eventId: 'CS-2026-1234' },
 });
+
+await memory.etch('user-456', {
+  type: 'deal-update',
+  content: 'Acme Corp deal stalled at negotiation — no activity in 14 days',
+  importance: 'medium',
+  metadata: { source: 'salesforce', dealId: 'OPP-2026-5678' },
+});
 ```
 
 ### Recalling Memories
 
 ```typescript
-const memories = await memory.recall('user-123', {
-  type: 'threat-finding',
+const memories = await memory.recall('user-456', {
+  type: 'deal-update',
   importance: 'medium',
   limit: 10,
   sortBy: 'importance',  // or 'recency' or 'frequency'
@@ -681,14 +724,14 @@ The orchestrator runs a plan-act-observe loop:
 ### Batch Execution
 
 ```typescript
-const result = await agent.run('Identify endpoints with active C2 beaconing');
+const result = await agent.run('What needs my attention across all connected systems today?');
 // { response, events, actionsExecuted, actionsPending, persona, durationMs }
 ```
 
 ### Streaming
 
 ```typescript
-for await (const event of agent.stream('Scan all domains for critical threats')) {
+for await (const event of agent.stream('Summarize open incidents, stalled deals, and blocked deployments')) {
   switch (event.type) {
     case 'plan': console.log('Planning:', event.data); break;
     case 'action': console.log('Tool:', event.data.tool, 'on', event.data.server); break;
@@ -874,20 +917,63 @@ emitter.onLog(createOTelLogCallback(logExporter));
 
 ## MCP Server Adapters
 
-The SDK ships 40+ pre-built cybersecurity vendor adapters spanning all 10 (ISC)² security domains. Each implements `MCPAdapter` and handles authentication, request formatting, and response normalization.
+The SDK ships 113 pre-built adapters across security, DevOps, cloud infrastructure, observability, productivity, AI/ML, and business operations. Each implements `MCPAdapter` and handles authentication, request formatting, and response normalization. All 113 are included under Apache 2.0.
 
-| (ISC)² Domain | Category | Adapters |
-|---------------|----------|----------|
-| Security Management | GRC / Compliance | ServiceNow GRC, OneTrust, Drata |
-| Access Control | Identity & Access | CyberArk, BeyondTrust, Delinea, Ping Identity |
-| Telecom & Network Security | Network Security | Palo Alto Networks, Fortinet, Check Point, Cisco Secure, Zscaler, Barracuda, Darktrace |
-| Cryptography | Key Management | *(via Vault MCP adapter in federation config)* |
-| Security Architecture | Vulnerability Mgmt | Tenable, Qualys, Rapid7, Orca, Lacework, Wiz, Prisma Cloud |
-| Operations Security | SIEM / Analytics | Splunk, IBM QRadar, Microsoft Sentinel, Sumo Logic, LogRhythm, Datadog Security |
-| Application Security | EDR / XDR | CrowdStrike Falcon, CrowdStrike Identity, Carbon Black, SentinelOne, Cybereason, Sophos, Trend Micro |
-| Physical Security | Physical Access | *(bring your own adapter — see [Writing Custom Adapters](#writing-custom-adapters))* |
-| Business Continuity | DR / Backup | *(bring your own adapter — see [Writing Custom Adapters](#writing-custom-adapters))* |
-| Law & Ethics | Threat Intel / Email | Recorded Future, ThreatConnect, Anomali, Mandiant, Proofpoint, Mimecast |
+### Security Operations
+
+| Category | Adapters |
+|----------|----------|
+| EDR / XDR | CrowdStrike Falcon, CrowdStrike Identity, Carbon Black, SentinelOne, Cybereason, Sophos, Trend Micro |
+| SIEM / Analytics | Splunk, IBM QRadar, Microsoft Sentinel, Sumo Logic, LogRhythm, Datadog Security, Coralogix, Elasticsearch |
+| Threat Intelligence | Recorded Future, ThreatConnect, Anomali, Mandiant |
+| Network Security | Palo Alto Networks, Fortinet, Check Point, Cisco Secure, Zscaler, Barracuda, Darktrace, Cloudflare |
+| Vulnerability Mgmt | Tenable, Qualys, Rapid7, Orca, Lacework, Wiz, Prisma Cloud |
+| Identity & Access | CyberArk, BeyondTrust, Delinea, Ping Identity |
+| GRC / Compliance | ServiceNow GRC, OneTrust, Drata |
+| Email Security | Proofpoint, Mimecast |
+| Incident Management | PagerDuty, Incident.io, Sentry |
+
+### DevOps & Infrastructure
+
+| Category | Adapters |
+|----------|----------|
+| CI/CD | GitHub, GitLab, Bitbucket, CircleCI, ArgoCD |
+| Containers & Orchestration | Kubernetes, Docker Hub, Terraform Registry |
+| Cloud Platforms | AWS, Azure, Google Cloud, Vercel, Cloudflare |
+| Databases | MongoDB, PostgreSQL, Redis, Snowflake, BigQuery, Neon, Supabase, Elasticsearch |
+
+### Observability
+
+| Category | Adapters |
+|----------|----------|
+| Monitoring & APM | Datadog Observability, Grafana, New Relic, Dynatrace, Prometheus, Coralogix |
+
+### Productivity & Collaboration
+
+| Category | Adapters |
+|----------|----------|
+| Communication | Slack, Microsoft Teams, Discord, Zoom, Twilio |
+| Project Management | Jira, Linear, Asana, Notion, Confluence |
+| Email & Calendar | Gmail, Google Calendar, SendGrid, Microsoft Graph |
+| Workspace | Google Drive, Google Workspace, Figma, Retool |
+
+### AI / ML Platforms
+
+| Category | Adapters |
+|----------|----------|
+| Model Providers | OpenAI API, Anthropic API, Ollama API, Hugging Face |
+| Frameworks | LangChain API, LlamaIndex API, Weights & Biases |
+
+### Business Operations
+
+| Category | Adapters |
+|----------|----------|
+| CRM & Marketing | Salesforce, HubSpot, LinkedIn |
+| Payments & Finance | Stripe, PayPal, Plaid, QuickBooks, Xero, Shopify |
+| Support | Zendesk, ServiceNow ITSM |
+| Content & Social | Twitter, Reddit, YouTube, Twitch, Dev.to, Substack, Stack Overflow |
+
+Managed adapter maintenance — keeping adapters current as vendor APIs and MCP specifications evolve — is available from [protectNIL Inc.](https://protectnil.com)
 
 ### Using an Adapter
 
@@ -921,9 +1007,11 @@ await federation.connect('splunk', {
 ```typescript
 import { type MCPAdapter, type Tool, type ToolResult } from '@epicai/core';
 
-class MySecurityTool implements MCPAdapter {
-  readonly name = 'my-tool';
+class MyCustomAdapter implements MCPAdapter {
+  readonly name: string;
   status: 'disconnected' | 'connecting' | 'connected' | 'error' = 'disconnected';
+
+  constructor(name: string) { this.name = name; }
 
   async connect(): Promise<void> { /* negotiate transport */ }
   async disconnect(): Promise<void> { /* cleanup */ }
@@ -933,8 +1021,8 @@ class MySecurityTool implements MCPAdapter {
 }
 
 // Register with the federation
-const config = { name: 'my-tool', transport: 'stdio' as const, command: 'my-security-tool' };
-await federation.connect('my-tool', config, new MySecurityTool());
+const config = { name: 'my-tool', transport: 'stdio' as const, command: 'my-mcp-tool' };
+await federation.connect('my-tool', config, new MyCustomAdapter('my-tool'));
 ```
 
 ### Custom Vector Store
@@ -1089,4 +1177,4 @@ The wizard:
 
 ---
 
-*Epic AI® is a registered trademark of protectNIL Inc. (U.S. Reg. No. 7,748,019)*
+*Epic AI® — Intelligent Virtual Assistant (IVA) Platform | Built by [protectNIL Inc.](https://protectnil.com) | U.S. Reg. No. 7,748,019*

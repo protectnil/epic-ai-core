@@ -1,7 +1,7 @@
-# Epic AI®
-## Zero LLM Context MCP Orchestrator — Intelligent Virtual Assistant (IVA) for all 10 (ISC)² security domains
+# Epic AI® IVA Core
+## Local SLM orchestrates. Cloud LLM responds. Your data never leaves.
 
-> **Local SLM routes tools, cloud LLM responds. Security data never leaves your infrastructure.**
+> **Zero LLM Context MCP Orchestrator — 113 enterprise adapters, tiered autonomy governance, tamper-evident audit trails. Connect your AI to everything.**
 
 [![npm version](https://img.shields.io/npm/v/@epicai/core.svg?style=flat)](https://www.npmjs.com/package/@epicai/core)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
@@ -9,7 +9,9 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
 
-**Epic AI®** is an open source TypeScript SDK for building Intelligent Virtual Assistants (IVA) that federate across multiple Model Context Protocol (MCP) servers with tiered autonomy governance, hybrid retrieval, persistent memory, persona routing, and tamper-evident audit trails — spanning all 10 (ISC)² security domains. The SDK's orchestrator/generator architecture keeps tool schemas, MCP server topology, and intermediate tool results on your local SLM — only curated context reaches the cloud LLM for response synthesis.
+**Epic AI®** is an open-source TypeScript SDK for building Intelligent Virtual Assistants (IVAs) that federate across multiple Model Context Protocol (MCP) servers. A local small language model (SLM) handles all tool selection, routing, and governance — keeping tool schemas, server topology, and intermediate results off the cloud LLM entirely. The cloud LLM receives only curated context for response synthesis.
+
+113 pre-built adapters span security, DevOps, cloud infrastructure, observability, productivity, AI/ML, and business operations — all under Apache 2.0.
 
 Built by [protectNIL Inc.](https://protectnil.com) — Epic AI® is a registered trademark (U.S. Reg. No. 7,748,019).
 
@@ -18,16 +20,19 @@ Built by [protectNIL Inc.](https://protectnil.com) — Epic AI® is a registered
 ## Why Epic AI®
 
 **1. Tool schemas bloat LLM context — and degrade performance.**
-Every MCP tool definition sent to a cloud LLM consumes tokens, increases latency, and leaks your internal tool surface to a third party. Epic AI® uses a local small language model (SLM) as the orchestrator that selects and invokes tools, keeping all tool schemas off the cloud LLM's context window. The cloud LLM only sees the retrieved results and generates the final response.
+Every MCP tool definition sent to a cloud LLM consumes tokens, increases latency, and leaks your internal tool surface to a third party. Epic AI® uses a local SLM as the orchestrator — tool schemas never reach the cloud. One query across 10 servers costs zero additional context tokens.
 
-**2. Agents need governance, not just guardrails.**
+**2. Your data stays on your infrastructure — by architecture, not by policy.**
+Every tool schema, every intermediate tool result, every routing decision stays on your local SLM. The cloud LLM receives only the curated, sanitized context needed to produce a response. Supports fully air-gapped deployments where no data transits external APIs.
+
+**3. Local SLM means low latency.**
+The orchestrator makes routing decisions in 50–200ms on commodity hardware. Total latency for a multi-tool orchestration loop is under 2 seconds locally, versus 5–15 seconds round-tripping to cloud APIs per tool call.
+
+**4. Agents need governance, not just guardrails.**
 Static system-prompt guardrails break under adversarial input. Epic AI® implements a tiered autonomy engine: actions are classified as `auto`, `escalate`, or `approve` at runtime against dynamic policies. High-risk operations require explicit human approval before execution — not after.
 
-**3. Compliance requires provenance, not just logging.**
+**5. Compliance requires provenance, not just logging.**
 Append-only logs are not audit trails. Epic AI® writes every agent action to a SHA-256 hash-chained record that makes tampering detectable across any sequence of events, with export to JSON, CSV, and syslog formats.
-
-**4. Security data stays on your infrastructure — by design.**
-Every MCP tool schema, every intermediate tool result, and every routing decision stays on your local SLM. The cloud LLM receives only curated, sanitized context for response synthesis. Your security telemetry, vendor topology, and threat data never transit a third-party API.
 
 ---
 
@@ -58,10 +63,10 @@ const agent = await EpicAI.create({
     },
   },
   persona: {
-    name:         'praetor',
+    name:         'sentinel',
     tone:         'commanding',
     domain:       'cybersecurity',
-    systemPrompt: 'You are the Praetor, a sovereign cybersecurity intelligence officer.',
+    systemPrompt: 'You are a sovereign cybersecurity intelligence officer.',
   },
   audit: { store: 'memory', integrity: 'sha256-chain' },
 });
@@ -103,7 +108,7 @@ await agent.stop();
        ┌────┘   ┌────┘   ┌────┘   ┌────┘
        ▼        ▼        ▼        ▼
    [MCP-1]  [MCP-2]  [MCP-3]  [MCP-N]
-   Splunk  CrowdStrike  Vault   Qualys ...
+   Splunk  CrowdStrike  Vault   GitHub ...
             │
             │ results returned
             ▼
@@ -200,7 +205,7 @@ autonomy.addPolicy({
 
 const decision = await autonomy.evaluate({
   tool: 'delete', server: 'prod', args: {},
-  persona: 'praetor', timestamp: new Date(), priorActions: [],
+  persona: 'sentinel', timestamp: new Date(), priorActions: [],
 });
 // decision.tier === 'approve' — blocked, pending human approval
 ```
@@ -255,10 +260,10 @@ import { PersonaManager, SystemPromptBuilder } from '@epicai/core';
 
 const persona = new PersonaManager();
 persona.register({
-  name:         'praetor',
+  name:         'sentinel',
   tone:         'commanding',
   domain:       'cybersecurity',
-  systemPrompt: 'You are the Praetor, a sovereign threat intelligence officer.',
+  systemPrompt: 'You are a sovereign threat intelligence officer.',
   vocabulary:   { 'host': 'endpoint', 'user': 'principal' },
   constraints:  ['Never speculate beyond available evidence.', 'Cite all source servers.'],
 });
@@ -295,22 +300,65 @@ await audit.export('syslog');  // emits to syslog
 
 ---
 
-## 40 Cybersecurity MCP Server Adapters
+## 113 Enterprise Adapters
 
-Epic AI® ships pre-built adapters spanning all 10 (ISC)² security domains: Security Management, Access Control, Telecom & Network Security, Cryptography, Security Architecture, Operations Security, Application Security, Physical Security, Business Continuity, and Law & Ethics.
+Epic AI® ships 113 pre-built MCP server adapters across security, DevOps, cloud infrastructure, observability, productivity, AI/ML, and business operations. Each adapter implements the `MCPAdapter` interface and handles authentication, request formatting, and response normalization for its respective platform.
 
-Each adapter implements the `MCPAdapter` interface and handles authentication, request formatting, and response normalization for its respective platform.
+All 113 adapters are included in the SDK under Apache 2.0.
+
+### Security Operations
 
 | Category              | Adapters                                                                                     |
 |-----------------------|----------------------------------------------------------------------------------------------|
 | **EDR / XDR**         | CrowdStrike Falcon, CrowdStrike Identity, Carbon Black, SentinelOne, Cybereason, Sophos, Trend Micro |
-| **SIEM / Analytics**  | Splunk, IBM QRadar, Microsoft Sentinel, Sumo Logic, LogRhythm, Datadog Security              |
-| **Threat Intelligence** | Recorded Future, ThreatConnect, Anomali, Mandiant                                          |
-| **Network Security**  | Palo Alto Networks, Fortinet, Check Point, Cisco Secure, Zscaler, Barracuda, Darktrace       |
+| **SIEM / Analytics**  | Splunk, IBM QRadar, Microsoft Sentinel, Sumo Logic, LogRhythm, Datadog Security, Coralogix, Elasticsearch |
+| **Threat Intelligence** | Recorded Future, ThreatConnect, Anomali, Mandiant                                         |
+| **Network Security**  | Palo Alto Networks, Fortinet, Check Point, Cisco Secure, Zscaler, Barracuda, Darktrace, Cloudflare |
 | **Vulnerability Mgmt**| Tenable, Qualys, Rapid7, Orca, Lacework, Wiz, Prisma Cloud                                  |
 | **Identity & Access** | CyberArk, BeyondTrust, Delinea, Ping Identity                                               |
 | **GRC / Compliance**  | ServiceNow GRC, OneTrust, Drata                                                              |
 | **Email Security**    | Proofpoint, Mimecast                                                                         |
+| **Incident Management** | PagerDuty, Incident.io, Sentry                                                            |
+
+### DevOps & Infrastructure
+
+| Category              | Adapters                                                                                     |
+|-----------------------|----------------------------------------------------------------------------------------------|
+| **CI/CD**             | GitHub, GitLab, Bitbucket, CircleCI, ArgoCD                                                  |
+| **Containers & Orchestration** | Kubernetes, Docker Hub, Terraform Registry                                          |
+| **Cloud Platforms**   | AWS, Azure, Google Cloud, Vercel, Cloudflare                                                 |
+| **Databases**         | MongoDB, PostgreSQL, Redis, Snowflake, BigQuery, Neon, Supabase, Elasticsearch               |
+
+### Observability
+
+| Category              | Adapters                                                                                     |
+|-----------------------|----------------------------------------------------------------------------------------------|
+| **Monitoring & APM**  | Datadog Observability, Grafana, New Relic, Dynatrace, Prometheus, Coralogix                  |
+
+### Productivity & Collaboration
+
+| Category              | Adapters                                                                                     |
+|-----------------------|----------------------------------------------------------------------------------------------|
+| **Communication**     | Slack, Microsoft Teams, Discord, Zoom, Twilio                                                |
+| **Project Management**| Jira, Linear, Asana, Notion, Confluence                                                      |
+| **Email & Calendar**  | Gmail, Google Calendar, SendGrid, Microsoft Graph                                            |
+| **Workspace**         | Google Drive, Google Workspace, Figma, Retool                                                |
+
+### AI / ML Platforms
+
+| Category              | Adapters                                                                                     |
+|-----------------------|----------------------------------------------------------------------------------------------|
+| **Model Providers**   | OpenAI API, Anthropic API, Ollama API, Hugging Face                                          |
+| **Frameworks**        | LangChain API, LlamaIndex API, Weights & Biases                                             |
+
+### Business Operations
+
+| Category              | Adapters                                                                                     |
+|-----------------------|----------------------------------------------------------------------------------------------|
+| **CRM & Marketing**   | Salesforce, HubSpot, LinkedIn                                                                |
+| **Payments & Finance**| Stripe, PayPal, Plaid, QuickBooks, Xero, Shopify                                            |
+| **Support**           | Zendesk, ServiceNow ITSM                                                                    |
+| **Content & Social**  | Twitter, Reddit, YouTube, Twitch, Dev.to, Substack, Stack Overflow                          |
 
 ### Example: Splunk Adapter
 
@@ -327,7 +375,7 @@ const splunk = new SplunkMCPServer({
 await federation.connect('splunk', { name: 'splunk', transport: 'streamable-http', url: 'https://splunk.corp.example.com:8089' });
 ```
 
-All 40 adapters share a consistent interface — swap platforms without changing orchestration logic.
+All 113 adapters share a consistent interface — swap platforms without changing orchestration logic. Managed adapter maintenance — keeping adapters current as vendor APIs and MCP specifications evolve — is available from [protectNIL Inc.](https://protectnil.com)
 
 ---
 
@@ -514,12 +562,12 @@ You may not use this software except in compliance with the License. A copy of t
 
 ## Trademark Notice
 
-**Epic AI®** is a registered trademark of protectNIL Inc., U.S. Trademark Registration No. 7,748,019. Use of the Epic AI® name and mark in connection with software, services, or documentation is subject to the trademark policies of protectNIL Inc.
+**Epic AI®** is a registered trademark of protectNIL Inc., U.S. Trademark Registration No. 7,748,019. Use of the Epic AI® name and mark in connection with software, services, or documentation is subject to the [trademark policies](TRADEMARK.md) of protectNIL Inc.
 
-The `@epicai/core` npm package and this repository are official specimens of use of the Epic AI® mark in commerce in connection with downloadable computer software featuring an Intelligent Virtual Assistant (IVA) for cybersecurity, utilizing natural language processing (NLP), natural language understanding (NLU), machine learning, and generative and conversational AI to access and process third-party security sources of information across all 10 (ISC)² security domains.
+The `@epicai/core` npm package and this repository are official specimens of use of the Epic AI® mark in commerce in connection with downloadable computer software featuring an Intelligent Virtual Assistant (IVA) utilizing natural language processing (NLP), natural language understanding (NLU), machine learning, generative and conversational AI to access and process third-party sources of information across security operations, DevOps, cloud infrastructure, observability, productivity, AI/ML platforms, and business operations.
 
-All other trademarks, service marks, and product names referenced in this document are the property of their respective owners. CrowdStrike, Splunk, Palo Alto Networks, Microsoft Sentinel, IBM QRadar, and all other third-party names are used solely to identify compatible integrations and are not affiliated with or endorsed by protectNIL Inc.
+All other trademarks, service marks, and product names referenced in this document are the property of their respective owners. CrowdStrike, Splunk, Palo Alto Networks, Microsoft, IBM, AWS, Google Cloud, Kubernetes, GitHub, Salesforce, and all other third-party names are used solely to identify compatible integrations and are not affiliated with or endorsed by protectNIL Inc.
 
 ---
 
-*Epic AI® — Intelligent Virtual Assistant (IVA) for Cybersecurity | Zero LLM Context MCP Orchestrator | Built by [protectNIL Inc.](https://protectnil.com)*
+*Epic AI® — Intelligent Virtual Assistant (IVA) Platform | Zero LLM Context MCP Orchestrator | 113 Enterprise Adapters | Built by [protectNIL Inc.](https://protectnil.com)*

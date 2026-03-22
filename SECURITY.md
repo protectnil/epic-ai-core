@@ -33,7 +33,7 @@ This policy covers the `@epicai/core` npm package and its direct dependencies. I
 
 - Third-party MCP servers connected via the federation layer
 - Customer-deployed orchestrator or generator models
-- The Epic AI® Praetor product (report separately to security@epic-ai.io)
+- Products built on the Epic AI® IVA Core SDK (report separately to security@epic-ai.io)
 
 ## Recognition
 

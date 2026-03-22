@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## 0.2.0 — 2026-03-22
+
+### Changed
+- **Product renamed to Epic AI® IVA Core** — title, README, Developer Guide, package.json description, and footer all reflect IVA Core branding to align with U.S. Trademark Reg. No. 7,748,019
+- **113 enterprise adapters** (was 40 cybersecurity-only) — expanded from 10 (ISC)² security domains to 7 operational categories: Security, DevOps & Infrastructure, Observability, Productivity & Collaboration, AI/ML Platforms, Business Operations, and Content & Social
+- Adapter section reorganized by operational category with full vendor tables across all 7 domains
+- README "Why Epic AI®" section reordered — token efficiency, data sovereignty, and SLM latency now lead; governance and compliance follow
+- README subtitle: "Local SLM orchestrates. Cloud LLM responds. Your data never leaves."
+- Developer Guide intro broadened from "IVA framework for cybersecurity" to platform-level positioning across all adapter domains
+- Developer Guide persona examples expanded from 2 (security-only) to 7: sentinel (security), ops-lead (DevOps), deal-desk (sales), controller (finance), chief (CEO), pm (product), people-ops (HR)
+- Developer Guide orchestrator examples broadened to cross-functional queries
+- Developer Guide memory examples now include security and sales use cases
+- Developer Guide retrieval indexing example includes deployment runbook alongside threat/vuln data
+- Data sovereignty section reframed from "security architecture" to "data sovereignty architecture" with cross-domain data examples
+- Custom adapter examples renamed from `MySecurityTool` to `MyCustomAdapter`
+- Persona name in all SDK examples changed from `praetor` to `sentinel`
+- Approver email in autonomy examples changed from `ciso@corp.com` to `ops@corp.com`
+
+### Added
+- NOTICE file — Apache 2.0 Section 4(d) attribution carry-forward
+- TRADEMARK.md added to npm package `files` array
+- Managed adapter maintenance line in README and Developer Guide: "keeping adapters current as vendor APIs and MCP specifications evolve — available from protectNIL Inc."
+- Trademark notice in README and Developer Guide expanded to cover all 7 operational domains
+
+### Fixed
+- Developer Guide Writing Custom Adapters section: `MyCustomAdapter` class now has constructor accepting `name` parameter, consistent with Federation Layer MCPAdapter example
+- SECURITY.md: removed proprietary product name from public repo scope section
+
+---
+
 ## 0.1.2 — 2026-03-21
 
 ### Added
