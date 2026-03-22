@@ -1,7 +1,7 @@
 /**
  * Epic AI® Cybersecurity Briefing Example
  * Streams a threat briefing with Ollama orchestration and tiered autonomy.
- * Requires: ollama serve + ollama pull mistral:7b
+ * Requires: ollama serve + ollama pull qwen2.5:7b
  * Run: npx tsx index.ts
  */
 
@@ -12,7 +12,7 @@ async function main() {
     // Local SLM orchestrator — tool schemas never leave your machine
     orchestrator: {
       provider: 'ollama',
-      model: 'mistral:7b',
+      model: 'qwen2.5:7b',
       baseUrl: 'http://localhost:11434',
       maxIterations: 10,
     },

@@ -1,7 +1,9 @@
 /**
  * @epicai/core — Ollama Integration Test
- * Tests the orchestrator provider against a real Mistral Small 3 model.
- * Requires: ollama running with mistral-small3.1 pulled.
+ * Tests the orchestrator provider against a local model via Ollama.
+ * Default: qwen2.5:7b (best tool-calling accuracy at 7B scale).
+ * Override: EPICAI_TEST_MODEL=llama3.1:8b npm run test:integration
+ * Requires: ollama running with the target model pulled.
  * CPU inference — expect 10-60 seconds per call.
  */
 
@@ -10,7 +12,7 @@ import { createOrchestratorLLM } from '../../src/orchestrator/OrchestratorProvid
 import type { LLMToolDefinition } from '../../src/types/index.js';
 
 const OLLAMA_URL = 'http://localhost:11434';
-const MODEL = 'mistral:7b';
+const MODEL = process.env.EPICAI_TEST_MODEL || 'qwen2.5:7b';
 
 async function ollamaAvailable(): Promise<boolean> {
   try {

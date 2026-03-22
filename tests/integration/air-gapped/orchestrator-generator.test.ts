@@ -3,7 +3,9 @@
  * Exercises the full orchestrator→generator loop with Ollama on both sides.
  * Zero external API calls. All inference stays on the local GPU/CPU.
  *
- * Requires: ollama running with mistral:7b pulled.
+ * Default: qwen2.5:7b (best tool-calling accuracy at 7B scale).
+ * Override: EPICAI_TEST_MODEL=llama3.1:8b npm run test:integration
+ * Requires: ollama running with the target model pulled.
  * GPU recommended — 20 LLM calls at CPU speed will be slow.
  *
  * Run: npm run test:integration
@@ -14,7 +16,7 @@ import { createOrchestratorLLM } from '../../../src/orchestrator/OrchestratorPro
 import type { LLMToolDefinition, LLMResponse } from '../../../src/types/index.js';
 
 const OLLAMA_URL = 'http://localhost:11434';
-const MODEL = 'mistral:7b';
+const MODEL = process.env.EPICAI_TEST_MODEL || 'qwen2.5:7b';
 const TIMEOUT_MS = 120_000;
 
 async function ollamaAvailable(): Promise<boolean> {

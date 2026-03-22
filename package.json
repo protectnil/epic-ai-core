@@ -92,7 +92,7 @@
     "build": "tsc",
     "pretest": "tsc",
     "test": "vitest run",
-    "test:integration": "vitest run tests/integration/",
+    "test:integration": "vitest run --config tests/integration/vitest.config.ts",
     "test:harness": "npx tsx tests/harness-check.ts",
     "test:watch": "vitest",
     "lint": "tsc --noEmit"

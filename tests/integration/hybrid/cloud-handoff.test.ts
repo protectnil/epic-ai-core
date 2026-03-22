@@ -4,9 +4,10 @@
  * cloud LLM synthesizes the response from curated tool results.
  *
  * Requires:
- *   - ollama running with mistral:7b pulled (orchestrator)
+ *   - ollama running with target model pulled (orchestrator)
  *   - OPENAI_API_KEY env var set (generator)
  *
+ * Default: qwen2.5:7b. Override: EPICAI_TEST_MODEL=llama3.1:8b
  * Skips gracefully if either dependency is missing.
  *
  * Run: npm run test:integration
@@ -17,7 +18,7 @@ import { createOrchestratorLLM } from '../../../src/orchestrator/OrchestratorPro
 import type { LLMToolDefinition, LLMResponse, LLMMessage } from '../../../src/types/index.js';
 
 const OLLAMA_URL = 'http://localhost:11434';
-const ORCHESTRATOR_MODEL = 'mistral:7b';
+const ORCHESTRATOR_MODEL = process.env.EPICAI_TEST_MODEL || 'qwen2.5:7b';
 const GENERATOR_MODEL = 'gpt-4.1';
 const TIMEOUT_MS = 120_000;
 

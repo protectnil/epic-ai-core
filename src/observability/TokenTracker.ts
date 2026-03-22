@@ -38,6 +38,8 @@ const DEFAULT_PRICING: Record<string, { input: number; output: number }> = {
   'gpt-4o': { input: 2.50, output: 10.00 },
   'claude-sonnet-4-6': { input: 3.00, output: 15.00 },
   'claude-opus-4-6': { input: 15.00, output: 75.00 },
+  'qwen2.5:7b': { input: 0, output: 0 }, // local model — free
+  'llama3.1:8b': { input: 0, output: 0 }, // local model — free
   'mistral:7b': { input: 0, output: 0 }, // local model — free
   'ollama': { input: 0, output: 0 }, // local — free
 };
