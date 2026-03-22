@@ -17,6 +17,8 @@ import type {
   RunTiming,
 } from '../types/index.js';
 import type { FederationManager } from '../federation/FederationManager.js';
+import { ToolPreFilter } from '../federation/ToolPreFilter.js';
+import type { PreFilterOptions } from '../federation/ToolPreFilter.js';
 import type { TieredAutonomy } from '../autonomy/TieredAutonomy.js';
 import type { PersonaManager } from '../persona/PersonaManager.js';
 import type { HybridRetriever } from '../retrieval/HybridRetriever.js';
@@ -69,15 +71,18 @@ export interface OrchestratorDeps {
   memory?: PersistentMemory;
   audit: AuditTrail;
   maxIterations?: number;
+  preFilter?: PreFilterOptions;
 }
 
 export class Orchestrator {
   private readonly deps: OrchestratorDeps;
   private readonly maxIterations: number;
+  private readonly preFilter: ToolPreFilter;
 
   constructor(deps: OrchestratorDeps) {
     this.deps = deps;
     this.maxIterations = deps.maxIterations ?? DEFAULT_MAX_ITERATIONS;
+    this.preFilter = new ToolPreFilter();
   }
 
   /**
@@ -166,8 +171,10 @@ export class Orchestrator {
     // 2. BUILD SYSTEM PROMPT via persona
     const systemPrompt = this.deps.persona.buildSystemPrompt();
 
-    // 3. BUILD TOOL DEFINITIONS from federation
-    const tools = this.deps.federation.listTools();
+    // 3. BUILD TOOL DEFINITIONS from federation, narrowed by pre-filter
+    const allTools = this.deps.federation.listTools();
+    this.preFilter.index(allTools);
+    const tools = this.preFilter.select(query, this.deps.preFilter);
     const toolDefs: LLMToolDefinition[] = tools.map(t => ({
       name: t.name,
       description: t.description,

@@ -14,6 +14,8 @@ export { EpicAI } from './EpicAI.js';
 export { FederationManager } from './federation/FederationManager.js';
 export { ConnectionPool } from './federation/ConnectionPool.js';
 export { ToolRegistry } from './federation/ToolRegistry.js';
+export { ToolPreFilter } from './federation/ToolPreFilter.js';
+export type { PreFilterOptions } from './federation/ToolPreFilter.js';
 export { Correlator } from './federation/Correlator.js';
 export { MCPClientAdapter } from './federation/adapters/MCPClientAdapter.js';
 export type { MCPAdapter } from './federation/adapters/base.js';
