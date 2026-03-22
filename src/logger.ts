@@ -78,10 +78,18 @@ function queueLoki(component: string, level: string, line: string): void {
       lokiFlushTimer = null;
       void flushLoki();
     }, LOKI_FLUSH_INTERVAL_MS);
+    // Don't keep the process alive just for log flushing
+    lokiFlushTimer.unref();
   }
 }
 
 async function flushLoki(): Promise<void> {
+  // Clear pending timer to avoid double-flush
+  if (lokiFlushTimer) {
+    clearTimeout(lokiFlushTimer);
+    lokiFlushTimer = null;
+  }
+
   if (lokiBuffer.length === 0) return;
 
   const url = process.env.EPICAI_LOG_LOKI_URL!;
@@ -123,7 +131,7 @@ async function flushLoki(): Promise<void> {
       signal: AbortSignal.timeout(5000),
     });
 
-    if (!response.ok && response.status !== 204) {
+    if (!response.ok) {
       process.stderr.write(`[epicai.logger] Loki push failed: ${response.status}\n`);
     }
   } catch (err) {
@@ -132,9 +140,11 @@ async function flushLoki(): Promise<void> {
   }
 }
 
-// Flush on exit
+// Flush on natural exit — async handler re-enters the event loop so Node
+// waits for the fetch to complete. Does NOT fire on process.exit() (vitest);
+// callers must await logger.flush() in teardown for guaranteed delivery.
 if (typeof process !== 'undefined') {
-  process.on('beforeExit', () => { void flushLoki(); });
+  process.on('beforeExit', async () => { await flushLoki(); });
 }
 
 // ---------------------------------------------------------------------------
@@ -207,4 +217,15 @@ export function createLogger(component: string, level?: LogLevel): LoggerInterfa
       await flushLoki();
     },
   };
+}
+
+/**
+ * Flush the shared Loki buffer. Call this in test teardown (e.g. vitest afterAll)
+ * when running with EPICAI_LOG_LOKI_* env vars, since vitest calls process.exit()
+ * and the beforeExit handler won't fire.
+ *
+ *   afterAll(async () => { await flushAllLogs(); });
+ */
+export async function flushAllLogs(): Promise<void> {
+  await flushLoki();
 }

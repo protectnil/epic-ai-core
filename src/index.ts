@@ -56,7 +56,7 @@ export { SSEWriter } from './transport/SSEWriter.js';
 export { JSONResponse } from './transport/JSONResponse.js';
 
 // Logger
-export { createLogger } from './logger.js';
+export { createLogger, flushAllLogs } from './logger.js';
 export type { LoggerInterface } from './logger.js';
 
 // Observability
