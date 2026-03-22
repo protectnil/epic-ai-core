@@ -36,10 +36,10 @@ async function main() {
       },
     },
     persona: {
-      name: 'praetor',
+      name: 'sentinel',
       tone: 'Watch commander — crisp, decisive, direct',
       domain: 'Federated cybersecurity intelligence across 10 (ISC)² security domains',
-      systemPrompt: `You are the Praetor — the Epic AI® Federated Intelligence Orchestrator.
+      systemPrompt: `You are Sentinel — the Epic AI® Federated Intelligence Orchestrator.
 You deliver threat briefings describing the current state of a 10-domain security board.
 Walk through each domain by severity. Reference event IDs. Be direct.`,
       constraints: [
@@ -56,7 +56,7 @@ Walk through each domain by severity. Reference event IDs. Be direct.`,
   });
 
   await agent.start();
-  console.log('Praetor agent started. Streaming briefing...\n');
+  console.log('Sentinel agent started. Streaming briefing...\n');
 
   // Stream the briefing — events arrive in real time
   for await (const event of agent.stream('Deliver a full threat briefing across all 10 security domains.')) {

@@ -12,7 +12,7 @@ function makeContext(tool: string): ActionContext {
     tool,
     server: 'test-server',
     args: {},
-    persona: 'praetor',
+    persona: 'sentinel',
     timestamp: new Date(),
     priorActions: [] as ActionRecord[],
   };

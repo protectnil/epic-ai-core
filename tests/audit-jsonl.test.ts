@@ -61,7 +61,7 @@ describe('AuditTrail with JSONLAdapter', () => {
       tier: 'auto',
       input: { scope: 'all-endpoints' },
       output: { found: 42 },
-      persona: 'praetor',
+      persona: 'sentinel',
       durationMs: 250,
       timestamp: new Date(),
     });
@@ -73,7 +73,7 @@ describe('AuditTrail with JSONLAdapter', () => {
       tier: 'escalate',
       input: { hostId: 'abc123' },
       output: { status: 'contained' },
-      persona: 'praetor',
+      persona: 'sentinel',
       durationMs: 800,
       timestamp: new Date(),
     });
@@ -109,7 +109,7 @@ describe('AuditTrail with JSONLAdapter', () => {
         tier: 'auto',
         input: { index: i },
         output: { result: `done-${i}` },
-        persona: 'praetor',
+        persona: 'sentinel',
         durationMs: i * 10,
         timestamp: new Date(),
       });
@@ -132,11 +132,11 @@ describe('AuditTrail with JSONLAdapter', () => {
 
     await audit.record({
       action: 'read', tool: 'read', server: 'vault', tier: 'auto',
-      input: {}, output: {}, persona: 'praetor', durationMs: 10, timestamp: new Date(),
+      input: {}, output: {}, persona: 'sentinel', durationMs: 10, timestamp: new Date(),
     });
     await audit.record({
       action: 'delete', tool: 'delete', server: 'vault', tier: 'approve',
-      input: {}, output: {}, persona: 'praetor', durationMs: 20, timestamp: new Date(),
+      input: {}, output: {}, persona: 'sentinel', durationMs: 20, timestamp: new Date(),
     });
 
     const autoOnly = await audit.query({ tier: 'auto' });
@@ -156,7 +156,7 @@ describe('AuditTrail with JSONLAdapter', () => {
 
     await audit.record({
       action: 'test', tool: 'tool', server: 'server', tier: 'auto',
-      input: {}, output: {}, persona: 'praetor', durationMs: 10, timestamp: new Date(),
+      input: {}, output: {}, persona: 'sentinel', durationMs: 10, timestamp: new Date(),
     });
 
     const json = await audit.export('json');

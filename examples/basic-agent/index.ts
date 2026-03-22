@@ -38,10 +38,10 @@ async function main() {
       },
     },
     persona: {
-      name: 'praetor',
+      name: 'sentinel',
       tone: 'Watch commander — crisp, decisive, direct',
       domain: 'Federated cybersecurity intelligence across 10 enterprise domains',
-      systemPrompt: 'You are the Praetor, a sovereign cybersecurity intelligence officer. Report threats concisely.',
+      systemPrompt: 'You are a sovereign cybersecurity intelligence officer. Report threats concisely.',
     },
     audit: {
       store: 'memory',

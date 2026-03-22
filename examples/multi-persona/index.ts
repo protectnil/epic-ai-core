@@ -1,6 +1,6 @@
 /**
  * Epic AI® Multi-Persona Example
- * Same agent, two personas — Praetor (commanding) and Analyst (conversational).
+ * Same agent, two personas — Sentinel (commanding) and Analyst (conversational).
  * Demonstrates runtime persona switching without reconfiguring federation or autonomy.
  * Run: npx tsx index.ts
  */
@@ -13,16 +13,16 @@ const mockLLM = async (params: { messages: LLMMessage[] }): Promise<LLMResponse>
   const systemPrompt = params.messages.find(m => m.role === 'system')?.content ?? '';
   const query = params.messages.find(m => m.role === 'user')?.content ?? '';
 
-  if (systemPrompt.includes('Praetor')) {
+  if (systemPrompt.includes('Sentinel')) {
     return {
-      content: `PRAETOR BRIEFING: All 10 domains scanned. Telecom & Network is HOT — 3 critical events (TELECOMNETWORK-0012, -0015, -0018). Operations Security has 1 ESCALATED. Remaining 8 domains nominal. 2 actions awaiting your approval.`,
+      content: `SENTINEL BRIEFING: All 10 domains scanned. Telecom & Network is HOT — 3 critical events (TELECOMNETWORK-0012, -0015, -0018). Operations Security has 1 ESCALATED. Remaining 8 domains nominal. 2 actions awaiting your approval.`,
       toolCalls: [],
       finishReason: 'stop',
     };
   }
 
   return {
-    content: `Hey! So looking at the board, the main thing to pay attention to is the telecom domain — there are three critical events that came in over the last few hours. Two of them are DDoS-related and one looks like a BGP anomaly. The Praetor already escalated the ops-sec incident, so that's being handled. Want me to dig into any of these?`,
+    content: `Hey! So looking at the board, the main thing to pay attention to is the telecom domain — there are three critical events that came in over the last few hours. Two of them are DDoS-related and one looks like a BGP anomaly. The Sentinel already escalated the ops-sec incident, so that's being handled. Want me to dig into any of these?`,
     toolCalls: [],
     finishReason: 'stop',
   };
@@ -52,10 +52,10 @@ async function main() {
     },
     // Primary persona — registered at creation
     persona: {
-      name: 'praetor',
+      name: 'sentinel',
       tone: 'Watch commander — crisp, decisive, direct',
       domain: 'Federated cybersecurity intelligence',
-      systemPrompt: 'You are the Praetor, a sovereign cybersecurity intelligence officer. Deliver briefings with event IDs and severity language.',
+      systemPrompt: 'You are the Sentinel, a sovereign cybersecurity intelligence officer. Deliver briefings with event IDs and severity language.',
       constraints: ['Never speculate.', 'Cite all source servers.'],
     },
     audit: {
@@ -66,8 +66,8 @@ async function main() {
 
   await agent.start();
 
-  // --- Briefing as Praetor ---
-  console.log('=== PRAETOR ===\n');
+  // --- Briefing as Sentinel ---
+  console.log('=== SENTINEL ===\n');
   const briefing = await agent.run('Deliver a threat briefing.');
   console.log(briefing.response);
   console.log(`\nPersona: ${briefing.persona}\n`);

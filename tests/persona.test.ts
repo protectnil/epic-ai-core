@@ -9,28 +9,28 @@ describe('PersonaManager', () => {
   it('registers and retrieves a persona', () => {
     const mgr = new PersonaManager();
     mgr.register({
-      name: 'praetor',
+      name: 'sentinel',
       tone: 'commanding',
       domain: 'cybersecurity',
-      systemPrompt: 'You are the Praetor.',
+      systemPrompt: 'You are the Sentinel.',
     });
 
-    expect(mgr.active().name).toBe('praetor');
+    expect(mgr.active().name).toBe('sentinel');
   });
 
   it('switches between personas', () => {
     const mgr = new PersonaManager();
-    mgr.register({ name: 'praetor', tone: 'commanding', domain: 'cyber', systemPrompt: 'Praetor.' });
+    mgr.register({ name: 'sentinel', tone: 'commanding', domain: 'cyber', systemPrompt: 'Sentinel.' });
     mgr.register({ name: 'nila', tone: 'gen-z', domain: 'athletics', systemPrompt: 'NILA.' });
 
-    expect(mgr.active().name).toBe('praetor'); // first registered is default
+    expect(mgr.active().name).toBe('sentinel'); // first registered is default
     mgr.switch('nila');
     expect(mgr.active().name).toBe('nila');
   });
 
   it('throws on switching to unregistered persona', () => {
     const mgr = new PersonaManager();
-    mgr.register({ name: 'praetor', tone: 'commanding', domain: 'cyber', systemPrompt: 'Praetor.' });
+    mgr.register({ name: 'sentinel', tone: 'commanding', domain: 'cyber', systemPrompt: 'Sentinel.' });
 
     expect(() => mgr.switch('nonexistent')).toThrow('not registered');
   });
@@ -38,15 +38,15 @@ describe('PersonaManager', () => {
   it('builds system prompt with constraints', () => {
     const mgr = new PersonaManager();
     mgr.register({
-      name: 'praetor',
+      name: 'sentinel',
       tone: 'commanding',
       domain: 'cybersecurity',
-      systemPrompt: 'You are the Praetor.',
+      systemPrompt: 'You are the Sentinel.',
       constraints: ['Never minimize severity', 'Always state the autonomy tier'],
     });
 
     const prompt = mgr.buildSystemPrompt();
-    expect(prompt).toContain('You are the Praetor.');
+    expect(prompt).toContain('You are the Sentinel.');
     expect(prompt).toContain('RULES:');
     expect(prompt).toContain('1. Never minimize severity');
     expect(prompt).toContain('2. Always state the autonomy tier');
@@ -71,10 +71,10 @@ describe('PersonaManager', () => {
   it('builds system prompt with memory context', () => {
     const mgr = new PersonaManager();
     mgr.register({
-      name: 'praetor',
+      name: 'sentinel',
       tone: 'commanding',
       domain: 'cybersecurity',
-      systemPrompt: 'You are the Praetor.',
+      systemPrompt: 'You are the Sentinel.',
     });
 
     const prompt = mgr.buildSystemPrompt({

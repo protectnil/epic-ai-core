@@ -1,6 +1,6 @@
 /**
  * MockMCPAdapter — synthetic threat event generator for all 10 (ISC)² security domains.
- * Replaces threat-generator.js in the Praetor web app. Zero auth — no constructor config.
+ * Synthetic threat event generator. Zero auth — no constructor config.
  
  * Built on the Epic AI® Intelligence Platform
  * Copyright 2026 protectNIL Inc. Apache-2.0

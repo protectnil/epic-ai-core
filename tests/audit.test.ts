@@ -18,7 +18,7 @@ describe('AuditTrail', () => {
       tier: 'auto',
       input: { query: 'error' },
       output: { results: 5 },
-      persona: 'praetor',
+      persona: 'sentinel',
       durationMs: 150,
       timestamp: new Date(),
     });
@@ -35,12 +35,12 @@ describe('AuditTrail', () => {
 
     const r1 = await audit.record({
       action: 'read', tool: 'read', server: 'vault', tier: 'auto',
-      input: {}, output: {}, persona: 'praetor', durationMs: 10, timestamp: new Date(),
+      input: {}, output: {}, persona: 'sentinel', durationMs: 10, timestamp: new Date(),
     });
 
     const r2 = await audit.record({
       action: 'contain', tool: 'contain', server: 'crowdstrike', tier: 'escalate',
-      input: {}, output: {}, persona: 'praetor', durationMs: 20, timestamp: new Date(),
+      input: {}, output: {}, persona: 'sentinel', durationMs: 20, timestamp: new Date(),
     });
 
     expect(r2.previousHash).toBe(r1.hash);
@@ -53,7 +53,7 @@ describe('AuditTrail', () => {
     for (let i = 0; i < 5; i++) {
       await audit.record({
         action: `action-${i}`, tool: 'tool', server: 'server', tier: 'auto',
-        input: {}, output: {}, persona: 'praetor', durationMs: i * 10, timestamp: new Date(),
+        input: {}, output: {}, persona: 'sentinel', durationMs: i * 10, timestamp: new Date(),
       });
     }
 
@@ -67,15 +67,15 @@ describe('AuditTrail', () => {
 
     await audit.record({
       action: 'read', tool: 'read', server: 'vault', tier: 'auto',
-      input: {}, output: {}, persona: 'praetor', durationMs: 10, timestamp: new Date(),
+      input: {}, output: {}, persona: 'sentinel', durationMs: 10, timestamp: new Date(),
     });
     await audit.record({
       action: 'delete', tool: 'delete', server: 'vault', tier: 'approve',
-      input: {}, output: {}, persona: 'praetor', durationMs: 20, timestamp: new Date(),
+      input: {}, output: {}, persona: 'sentinel', durationMs: 20, timestamp: new Date(),
     });
     await audit.record({
       action: 'contain', tool: 'contain', server: 'cs', tier: 'escalate',
-      input: {}, output: {}, persona: 'praetor', durationMs: 30, timestamp: new Date(),
+      input: {}, output: {}, persona: 'sentinel', durationMs: 30, timestamp: new Date(),
     });
 
     const autoActions = await audit.query({ tier: 'auto' });
@@ -92,7 +92,7 @@ describe('AuditTrail', () => {
 
     await audit.record({
       action: 'test', tool: 'tool', server: 'server', tier: 'auto',
-      input: {}, output: {}, persona: 'praetor', durationMs: 10, timestamp: new Date(),
+      input: {}, output: {}, persona: 'sentinel', durationMs: 10, timestamp: new Date(),
     });
 
     const json = await audit.export('json');
@@ -106,7 +106,7 @@ describe('AuditTrail', () => {
 
     await audit.record({
       action: 'test', tool: 'tool', server: 'server', tier: 'auto',
-      input: {}, output: {}, persona: 'praetor', durationMs: 10, timestamp: new Date(),
+      input: {}, output: {}, persona: 'sentinel', durationMs: 10, timestamp: new Date(),
     });
 
     const csv = await audit.export('csv');
@@ -119,7 +119,7 @@ describe('AuditTrail', () => {
 
     await audit.record({
       action: 'test', tool: 'tool', server: 'server', tier: 'auto',
-      input: {}, output: {}, persona: 'praetor', durationMs: 10, timestamp: new Date(),
+      input: {}, output: {}, persona: 'sentinel', durationMs: 10, timestamp: new Date(),
     });
 
     const syslog = await audit.export('syslog');
@@ -137,7 +137,7 @@ describe('AuditTrail', () => {
       tool: 'tool',
       server: 'server',
       tier: 'auto' as const,
-      persona: 'praetor',
+      persona: 'sentinel',
       durationMs: 10,
     };
 
