@@ -55,6 +55,10 @@ export { StreamManager } from './transport/StreamManager.js';
 export { SSEWriter } from './transport/SSEWriter.js';
 export { JSONResponse } from './transport/JSONResponse.js';
 
+// Logger
+export { createLogger } from './logger.js';
+export type { LoggerInterface } from './logger.js';
+
 // Observability
 export { ObservabilityEmitter } from './observability/EventEmitter.js';
 export type { LogLevel, LogEntry, EventCallback, LogCallback } from './observability/EventEmitter.js';

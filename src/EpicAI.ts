@@ -66,6 +66,7 @@ const OrchestratorConfigSchema = z.object({
   baseUrl: z.string().url().optional(),
   timeoutMs: z.number().positive().optional(),
   maxIterations: z.number().int().positive().optional(),
+  logLevel: z.enum(['debug', 'info', 'warn', 'error', 'off']).optional(),
   llm: z.function().optional(),
 });
 

@@ -49,6 +49,7 @@ export interface OrchestratorConfig {
   baseUrl?: string;
   timeoutMs?: number;
   maxIterations?: number;
+  logLevel?: 'debug' | 'info' | 'warn' | 'error' | 'off';
   llm?: LLMFunction;
 }
 
