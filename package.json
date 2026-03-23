@@ -47,9 +47,13 @@
     "type": "git",
     "url": "https://github.com/protectnil/epic-ai-core.git"
   },
+  "homepage": "https://epic-ai.io",
   "keywords": [
     "mcp",
     "model-context-protocol",
+    "iva",
+    "intelligent-virtual-assistant",
+    "ai-assistants",
     "agent",
     "orchestration",
     "federation",
@@ -60,7 +64,10 @@
     "audit",
     "llm",
     "ai",
-    "epic-ai"
+    "epic-ai",
+    "cybersecurity",
+    "devops",
+    "typescript"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
