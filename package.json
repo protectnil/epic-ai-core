@@ -1,6 +1,6 @@
 {
   "name": "@epicai/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Epic AI® IVA Core — Zero LLM Context MCP Orchestrator. Local SLM orchestrates, cloud LLM responds. 113 enterprise adapters across security, DevOps, cloud, observability, and more. Your data never leaves.",
   "type": "module",
   "main": "./dist/index.js",
