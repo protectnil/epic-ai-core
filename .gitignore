@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+coverage/
+.nyc_output/
+*.tgz
+*.ttf
+social-card.html
+*.py

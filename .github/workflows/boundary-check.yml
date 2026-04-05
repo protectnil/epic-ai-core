@@ -1,0 +1,87 @@
+name: Proprietary Boundary Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  boundary-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for adapter TypeScript source files
+        run: |
+          # Adapter .ts source files belong in the PRIVATE repo only.
+          # The public repo should contain compiled .js files, not .ts source.
+          # Allowed .ts files in src/mcp-servers/: types.ts, base.ts
+          VIOLATIONS=$(find src/mcp-servers -name '*.ts' \
+            ! -name 'types.ts' \
+            ! -name 'base.ts' \
+            2>/dev/null)
+
+          if [ -n "$VIOLATIONS" ]; then
+            COUNT=$(echo "$VIOLATIONS" | wc -l)
+            echo "============================================"
+            echo "BOUNDARY VIOLATION: $COUNT adapter .ts source file(s) in public repo"
+            echo "============================================"
+            echo ""
+            echo "Adapter TypeScript source is PROPRIETARY and belongs in the PRIVATE repo."
+            echo "The public repo should only contain compiled .js adapter files."
+            echo ""
+            echo "Files detected:"
+            echo "$VIOLATIONS" | head -20
+            if [ "$COUNT" -gt 20 ]; then
+              echo "... and $((COUNT - 20)) more"
+            fi
+            exit 1
+          fi
+
+          echo "OK: No adapter .ts source files in public repo."
+
+      - name: Check for Fabrique / foundry code
+        run: |
+          VIOLATIONS=$(find . -path '*/foundry/*' -o -path '*/fabrique/*' 2>/dev/null | grep -v node_modules)
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo "BOUNDARY VIOLATION: Fabrique/foundry code detected in public repo"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+
+          echo "OK: No Fabrique code in public repo."
+
+      - name: Check for proprietary documents
+        run: |
+          BLOCKED_PATTERNS="LAUNCH-PLAN|FOUNDER-BIO|SESSION-HANDOFF|COMPONENT-LICENSING|MASTER-DIRECTIVE|enterprise-iam|PRODUCT-SUMMARY"
+
+          VIOLATIONS=$(find . -type f -name '*.md' | grep -iE "$BLOCKED_PATTERNS" | grep -v node_modules)
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo "BOUNDARY VIOLATION: Proprietary documents detected in public repo"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+
+          echo "OK: No proprietary documents in public repo."
+
+      - name: Check for encrypted / proprietary binaries
+        run: |
+          VIOLATIONS=$(find . -name '*.lora.enc' -o -name 'spec-map.json' -o -name '*.enc' 2>/dev/null | grep -v node_modules)
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo "BOUNDARY VIOLATION: Encrypted/proprietary files detected in public repo"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+
+          echo "OK: No encrypted files in public repo."
+
+      - name: Boundary check passed
+        run: |
+          echo "============================================"
+          echo "ALL BOUNDARY CHECKS PASSED"
+          echo "============================================"
+          echo "No proprietary code, documents, or files detected in the public repo."

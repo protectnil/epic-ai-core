@@ -1,0 +1,1461 @@
+# Epic AI® Legion — Developer Guide
+
+**SDK:** `@epicai/legion`
+**Version:** 1.1.0
+**License:** Apache 2.0
+**Runtime:** Node.js >= 20.0.0, TypeScript 5.3+
+
+Epic AI® Legion is an Intelligent Virtual Assistant that replaces dashboards and manual analysis — turning your enterprise systems into real-time actions and escalations. The SDK federates across multiple MCP servers, with a local small language model (SLM) handling all tool selection, routing, and governance. Tool schemas, server topology, and intermediate results stay off the cloud LLM entirely. The cloud LLM receives only curated context for response synthesis. 4,135 integrations (624 REST-only, 3,242 MCP-only, 246 dual REST+MCP, 23 REST candidates) exposing 35,835 tools span security, DevOps, cloud infrastructure, observability, productivity, AI/ML, and business operations. This guide covers every layer of the SDK.
+
+---
+
+## Table of Contents
+
+1. [Installation](#installation)
+2. [Quick Start](#quick-start)
+3. [Architecture](#architecture)
+4. [Configuration Reference](#configuration-reference)
+5. [Federation Layer](#federation-layer)
+6. [Autonomy Layer](#autonomy-layer)
+7. [Persona Layer](#persona-layer)
+8. [Retrieval Layer](#retrieval-layer)
+9. [Memory Layer](#memory-layer)
+10. [Audit Layer](#audit-layer)
+11. [Orchestrator](#orchestrator)
+12. [Inference Gateway](#inference-gateway)
+13. [Resilience](#resilience)
+14. [Observability](#observability)
+15. [MCP Server Adapters](#mcp-server-adapters)
+16. [Writing Custom Adapters](#writing-custom-adapters)
+17. [Adapter Sandboxing](#adapter-sandboxing)
+18. [Testing](#testing)
+19. [CLI Setup Tool](#cli-setup-tool)
+20. [Enterprise Trust](#enterprise-trust)
+
+---
+
+## Installation
+
+```bash
+npm install @epicai/legion
+```
+
+Optional peer dependencies for production:
+
+```bash
+npm install @qdrant/js-client-rest   # Vector store
+npm install redis                     # Approval queue + memory cache
+npm install mongodb                   # Audit + memory persistence
+```
+
+> **Ollama deprecation:** As of this release, Ollama and Apple M5 Metal are incompatible — confirmed crashes with no fix timeline from either vendor ([#13867](https://github.com/ollama/ollama/issues/13867), [#13896](https://github.com/ollama/ollama/issues/13896), [#13460](https://github.com/ollama/ollama/issues/13460)). Pre-M5 hardware is unaffected. The SDK and test harnesses have been migrated to the Inference Gateway (`legion-gateway`) with llama.cpp as the default backend.
+
+### Model Download
+
+Download a GGUF model for llama.cpp:
+
+1. Visit [huggingface.co/models](https://huggingface.co/models) and search for "llama 3.1 8B instruct GGUF"
+2. Download a Q4_K_M quantization (good balance of quality and speed)
+3. Start the server:
+
+```bash
+brew install llama.cpp
+llama-server --model llama-3.1-8b-instruct.Q4_K_M.gguf --port 8080
+```
+
+> **Tool calling:** Llama 3.1 8B requires the `--jinja` flag for structured tool calls. For reliable tool calling out of the box, use `functionary-small-v3.2`.
+
+## Quick Start
+
+```typescript
+import { EpicAI } from '@epicai/legion';
+
+const agent = await EpicAI.create({
+  orchestrator: { provider: 'auto', model: 'llama3.1:8b' },
+  generator: { provider: 'openai', model: 'gpt-4.1', apiKey: process.env.OPENAI_API_KEY },
+  federation: {
+    servers: [
+      { name: 'vault', transport: 'stdio', command: 'mcp-vault' },
+      { name: 'splunk', transport: 'streamable-http', url: 'https://splunk.local/mcp' },
+    ],
+  },
+  autonomy: {
+    tiers: {
+      auto: ['read', 'query', 'search'],
+      escalate: ['contain', 'isolate'],
+      approve: ['delete', 'revoke', 'terminate'],
+    },
+  },
+  persona: {
+    name: 'sentinel',
+    tone: 'commanding',
+    domain: 'cybersecurity',
+    systemPrompt: 'You are a sovereign cybersecurity intelligence officer.',
+  },
+  audit: { store: 'memory', integrity: 'sha256-chain' },
+});
+
+await agent.start();
+const result = await agent.run('What threats were detected in the last 24 hours?');
+console.log(result.response);
+await agent.stop();
+```
+
+## Architecture
+
+Epic AI® Legion separates concerns into five integrated layers, plus orchestration, transport, resilience, and observability:
+
+```
+User Query
+    │
+    ▼
+┌─────────────────────────────────────────────────────┐
+│                    Orchestrator                      │
+│                   (Local SLM)                        │
+│         Selects tools, routes actions.               │
+│         Tool schemas NEVER leave this box.           │
+└──────┬──────────────┬───────────────┬───────────────┘
+       │              │               │
+       ▼              ▼               ▼
+  Federation      Autonomy        Audit Trail
+  (N MCP servers) (3-tier gate)   (SHA-256 chain)
+       │              │
+       ▼              ▼
+  Tool Results    Approve/Deny
+       │
+       ▼
+┌─────────────────────────────────────────────────────┐
+│                    Generator                         │
+│              (Cloud LLM — GPT-4.1)                  │
+│         Receives curated context only.               │
+│         Produces final human-readable response.      │
+└─────────────────────────────────────────────────────┘
+```
+
+The orchestrator (local SLM) handles all tool selection and invocation. The generator (cloud LLM) only sees retrieved results and produces the response. Tool schemas, MCP server topology, and intermediate tool outputs never reach the cloud.
+
+### Architecture Notes
+
+#### Data Sovereignty
+
+The orchestrator/generator split is a data sovereignty architecture, not just a performance optimization. The local SLM (orchestrator) holds all tool schemas, MCP server connection details, and intermediate tool results. The cloud LLM (generator) receives only sanitized, curated context for response synthesis. This means:
+
+- Tool definitions never transit a third-party API
+- MCP server connection details (URLs, auth tokens, internal hostnames) stay local
+- Raw data from connected platforms (Splunk queries, CrowdStrike detections, Vault secrets, Jira tickets, Salesforce records, AWS events) is processed locally and only summarized results reach the generator
+
+For fully air-gapped deployments, set the generator to use your local backend and both the orchestrator and generator run locally with zero external network calls.
+
+#### Generator Fallback
+
+If `generator` is omitted from `EpicAIConfig`, `EpicAI.start()` reuses the orchestrator's local model for both tool routing and response synthesis. **This works when the orchestrator uses a local backend via the `'auto'` provider.** For all other providers, omitting `generator` throws an error at startup before any side effects (MCP connections, audit trail initialization) occur.
+
+For production deployments, always provide an explicit `generator` configuration pointing to a cloud LLM (GPT-4.1, Claude, etc.) for response quality. The orchestrator (local SLM) handles tool selection; the generator handles human-readable synthesis.
+
+#### Prompt Injection Defense
+
+All externally-sourced content passes through `sanitizeInjectedContent()` before entering any prompt. Sanitization is applied at three boundaries:
+
+1. **Before the planner loop** — Retrieval results and memory context are sanitized and wrapped in `<DATA_CONTEXT>` tags with an explicit instruction boundary before entering the orchestrator's system prompt.
+
+2. **Before the planner's next iteration** — Tool output from MCP servers is sanitized via `sanitizeInjectedContent()` before being pushed back into the planner's message history as `role: 'tool'` messages. The planner never sees raw, unsanitized tool output.
+
+3. **Before the synthesis prompt** — Tool output is sanitized again and wrapped in `<DATA_CONTEXT>` tags before the generator receives it for response synthesis.
+
+`sanitizeInjectedContent()` is a heuristic mitigation that strips lines starting with common injection prefixes (`ignore previous`, `system:`, `act as`, etc.). It is not a formal security boundary — sophisticated injection attacks may bypass prefix-based filtering. For deployments with untrusted MCP servers, implement additional output validation in your adapter's `callTool()` response and consider limiting `maxIterations` to constrain the planner's exposure.
+
+#### Stream Event Typing
+
+`StreamEvent` is a discriminated union with typed payloads for each event type. The type system enforces exact payload shapes at compile time:
+
+```typescript
+import type { PlanEvent, ActionEvent, ApprovalNeededEvent, ResultEvent,
+  NarrativeEvent, MemoryEvent, ErrorEvent, DoneEvent, StreamEvent } from '@epicai/legion';
+```
+
+Each variant is a separate interface (`PlanEvent`, `ActionEvent`, etc.) with a literal `type` discriminant, a typed `data` object, and a `timestamp: Date`. TypeScript narrows the payload automatically in `switch` statements on `event.type`.
+
+#### Startup Validation Order
+
+`EpicAI.start()` validates all configuration and creates LLM functions **before** performing any side effects. The sequence is:
+
+1. Create orchestrator LLM
+2. Resolve generator LLM (or throw if missing and non-local)
+3. Connect MCP servers (`connectAll()`)
+4. Initialize audit trail (`auditTrail.init()`)
+
+If configuration is invalid, the agent fails fast with no partial initialization.
+
+---
+
+## Configuration Reference
+
+### EpicAIConfig
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `orchestrator` | `OrchestratorConfig` | Yes | Local SLM for tool routing |
+| `generator` | `GeneratorConfig` | No | Cloud LLM for response synthesis (see [Generator Fallback](#generator-fallback)) |
+| `federation` | `FederationConfig` | Yes | MCP server connections |
+| `autonomy` | `AutonomyConfig` | Yes | Tiered action governance |
+| `retrieval` | `RetrievalConfig` | No | Hybrid vector search |
+| `persona` | `PersonaConfig` | Yes | Agent identity and system prompt |
+| `audit` | `AuditConfig` | Yes | Append-only audit trail |
+| `transport` | `'sse' \| 'json'` | No | Streaming format (default: `'json'`) |
+
+### OrchestratorConfig
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `provider` | `'auto' \| 'ollama' \| 'vllm' \| 'apple-foundation' \| 'custom'` | Runtime (`'auto'` discovers the gateway, llama.cpp, vLLM, and Ollama (deprecated)). Use `'custom'` with the `llm` field for llama.cpp or mlx-lm direct connections. |
+| `model` | `string` | Model name (e.g., `'llama3.1:8b'`) |
+| `baseUrl` | `string` | Inference backend endpoint |
+| `maxIterations` | `number` | Max tool-calling loop iterations |
+| `timeoutMs` | `number` | Per-call timeout (default: 5000) |
+| `llm` | `LLMFunction` | Bring-your-own LLM (for `'custom'` provider) |
+
+### GeneratorConfig
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `provider` | `'openai' \| 'anthropic' \| 'ollama' (deprecated) \| 'custom'` | LLM provider |
+| `model` | `string` | Model name (e.g., `'gpt-4.1'`, `'claude-opus-4-6'`) |
+| `apiKey` | `string` | Provider API key |
+| `maxTokens` | `number` | Max generation tokens |
+| `timeoutMs` | `number` | Per-call timeout (default: 30000) |
+| `llm` | `LLMFunction` | Bring-your-own LLM (for `'custom'` provider) |
+
+### FederationConfig
+
+```typescript
+{
+  servers: ServerConnection[];
+  retryPolicy?: { maxRetries: number; backoffMs: number; maxBackoffMs: number };
+  healthCheckIntervalMs?: number;
+}
+```
+
+### ServerConnection
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `string` | Unique server identifier |
+| `transport` | `'stdio' \| 'streamable-http'` | MCP transport |
+| `url` | `string` | URL for HTTP transport |
+| `command` | `string` | Command for stdio transport |
+| `args` | `string[]` | Command arguments |
+| `auth` | `AuthConfig` | Authentication (`bearer`, `basic`, `api-key`) |
+| `timeoutMs` | `number` | Connection timeout |
+
+### AutonomyConfig
+
+```typescript
+{
+  tiers: {
+    auto: string[];      // Tool names executed without review
+    escalate: string[];  // Executed, queued for post-hoc review
+    approve: string[];   // Blocked until human approves
+  };
+  policies?: AutonomyPolicy[];
+  approvalQueue?: {
+    persistence: 'memory' | 'redis';
+    ttlMs: number;
+    onExpire: 'deny' | 'escalate-to-admin';
+    redis?: { host: string; port: number };
+  };
+}
+```
+
+### AuditConfig
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `store` | `'memory' \| 'append-only-log' \| 'custom'` | Storage backend |
+| `path` | `string` | File path for `'append-only-log'` |
+| `integrity` | `'sha256-chain' \| 'none'` | Hash chaining mode |
+| `export` | `('json' \| 'csv' \| 'syslog')[]` | Enabled export formats |
+
+---
+
+## Federation Layer
+
+The federation layer connects N MCP servers behind a single interface with unified tool discovery, health monitoring, and cross-source entity correlation.
+
+### Connecting Servers
+
+```typescript
+import { FederationManager } from '@epicai/legion';
+
+const federation = new FederationManager({
+  servers: [
+    { name: 'crowdstrike', transport: 'streamable-http', url: 'https://cs.local/mcp',
+      auth: { type: 'bearer', token: process.env.CS_TOKEN } },
+    { name: 'vault', transport: 'stdio', command: 'mcp-vault' },
+  ],
+  retryPolicy: { maxRetries: 3, backoffMs: 500, maxBackoffMs: 10000 },
+  healthCheckIntervalMs: 30000,
+});
+
+await federation.connectAll();
+```
+
+### Tool Discovery
+
+```typescript
+const allTools = federation.listTools();           // All tools across all servers
+const vaultTools = federation.listToolsByServer('vault');  // Tools from one server
+```
+
+### Tool Invocation
+
+```typescript
+const result = await federation.callTool('vault_read_secret', { path: 'secret/api-keys' });
+// result: { content, isError, server: 'vault', tool: 'vault_read_secret', durationMs }
+```
+
+### Cross-Source Correlation
+
+```typescript
+const correlated = await federation.correlate({
+  timeRange: { start: new Date('2026-03-19'), end: new Date() },
+  entities: ['10.0.1.45', 'admin@corp.com'],
+  servers: ['crowdstrike', 'splunk'],
+});
+// Returns: { entities: CorrelatedEntity[], events: CorrelatedEvent[], timeline: [...] }
+```
+
+### Health Monitoring
+
+```typescript
+const health = await federation.health();
+// [{ server, status, toolCount, lastPingMs, lastError }]
+
+federation.onHealthChange((h) => {
+  if (h.status === 'error') console.error(`${h.server} down: ${h.lastError}`);
+});
+```
+
+### Two-Tier Tool Resolution
+
+When a query arrives, the federation layer narrows the full tool catalog down to a relevant subset before passing it to the LLM. This keeps the context window manageable as adapter counts grow.
+
+**Tier 1 — ToolPreFilter (BM25 + miniCOIL sparse):** BM25 keyword matching and miniCOIL sparse vector scoring rank each tool's name and description against the query. Tools below the score threshold are excluded. This tier is fast and requires no inference. Dense semantic search is not yet implemented — it requires a runtime embedding model.
+
+**Tier 2 — LLM Selection:** The LLM (local SLM or cloud) receives only the pre-filtered tool subset and selects specific tools for invocation. With fewer tools in context, selection accuracy improves and latency decreases.
+
+Configure the pre-filter threshold via `FederationConfig`:
+
+```typescript
+const federation = new FederationManager({
+  servers: [...],
+  preFilter: {
+    enabled: true,
+    bm25TopK: 20,          // Max tools passed to LLM after BM25 + miniCOIL scoring
+  },
+});
+```
+
+Disable pre-filtering for small deployments (fewer than ~30 tools) where full tool context fits comfortably within the LLM's context window.
+
+### Adaptive Connection Pool
+
+`AdaptivePool` manages per-tenant MCP server connections, scaling connection count based on observed request rate and evicting idle connections to bound memory.
+
+```typescript
+import { AdaptivePool } from '@epicai/legion';
+
+const pool = new AdaptivePool({
+  globalMaxConnections: 500,
+  perTenantBaseConnections: 20,
+  perTenantMaxConnections: 50,
+  burstMultiplier: 2.5,          // Temporary ceiling multiplier during burst
+  burstWindowMs: 30000,          // Burst window duration
+  evictionPolicy: 'lru',         // 'lru' | 'lfu'
+  scaleUpThresholdMs: 200,       // Scale up if request latency exceeds this
+  scaleDownIdleMs: 120000,       // Scale down after this idle period
+});
+```
+
+Burst mode temporarily raises the per-tenant connection ceiling (by `burstMultiplier`) when request latency exceeds `scaleUpThresholdMs`, then scales back down after `scaleDownIdleMs` of normal load. LRU eviction removes the least-recently-used tenant connections first when the pool approaches its limit.
+
+Attach to the federation layer via `FederationConfig.pool`:
+
+```typescript
+const federation = new FederationManager({
+  servers: [...],
+  pool: new AdaptivePool({
+    globalMaxConnections: 100,
+    perTenantBaseConnections: 5,
+    perTenantMaxConnections: 20,
+    burstMultiplier: 2,
+    burstWindowMs: 30000,
+    evictionPolicy: 'lru',
+    scaleUpThresholdMs: 200,
+    scaleDownIdleMs: 120000,
+  }),
+});
+```
+
+### MCPAdapter Interface
+
+Implement this to connect any custom MCP server:
+
+```typescript
+import { FederationManager, type MCPAdapter, type Tool, type ToolResult } from '@epicai/legion';
+
+class MyCustomAdapter implements MCPAdapter {
+  readonly name: string;
+  status: 'disconnected' | 'connecting' | 'connected' | 'error' = 'disconnected';
+
+  constructor(name: string) { this.name = name; }
+
+  async connect(): Promise<void> { /* negotiate transport */ }
+  async disconnect(): Promise<void> { /* cleanup */ }
+  async listTools(): Promise<Tool[]> { /* return tool definitions */ }
+  async callTool(name: string, args: Record<string, unknown>): Promise<ToolResult> { /* invoke */ }
+  async ping(): Promise<number> { /* return latency ms */ }
+}
+
+const serverConfig = { name: 'my-server', transport: 'stdio' as const, command: 'my-mcp' };
+
+// Pass an adapter instance directly
+await federation.connect('my-server', serverConfig, new MyCustomAdapter('my-server'));
+
+// Or pass a factory function
+await federation.connect('my-server', serverConfig, (cfg) => new MyCustomAdapter(cfg.name));
+```
+
+If no adapter is provided, `ConnectionPool` defaults to `MCPClientAdapter` (the built-in MCP protocol client).
+
+---
+
+## Autonomy Layer
+
+Every tool call passes through the TieredAutonomy engine before execution. Three tiers:
+
+| Tier | Behavior |
+|------|----------|
+| `auto` | Executed immediately, no human review |
+| `escalate` | Executed, enqueued for post-hoc human review |
+| `approve` | Blocked until a human explicitly approves |
+
+### Tier Evaluation
+
+```typescript
+import { TieredAutonomy } from '@epicai/legion';
+
+const autonomy = new TieredAutonomy(
+  {
+    auto: ['search', 'query', 'read', 'list'],
+    escalate: ['contain', 'isolate', 'block'],
+    approve: ['delete', 'revoke', 'terminate', 'disable'],
+  },
+  { persistence: 'memory', ttlMs: 3600000, onExpire: 'deny' },
+);
+
+const decision = await autonomy.evaluate({
+  tool: 'delete',
+  server: 'vault',
+  args: { path: 'secret/prod-keys' },
+  persona: 'sentinel',
+  timestamp: new Date(),
+  priorActions: [],
+});
+// decision.tier === 'approve', decision.allowed === false (pending)
+```
+
+### Dynamic Policies
+
+Policies override tier assignments at runtime based on context:
+
+```typescript
+autonomy.addPolicy({
+  name: 'no-prod-deletes-after-hours',
+  condition: (ctx) => ctx.tool === 'delete' && ctx.server === 'prod' && new Date().getHours() > 18,
+  override: 'approve',
+  priority: 10,
+});
+```
+
+Policies are evaluated in priority order (highest first). First match wins.
+
+### Approving and Denying Actions
+
+```typescript
+// Via the agent
+await agent.approve('action-uuid', { approver: 'ops@corp.com' });
+await agent.deny('action-uuid', { approver: 'ops@corp.com', reason: 'Out of change window' });
+
+// Via TieredAutonomy directly
+await autonomy.approve('action-uuid', 'ops@corp.com');
+await autonomy.deny('action-uuid', 'ops@corp.com', 'Not authorized');
+
+// List pending
+const pending = await autonomy.pending();
+```
+
+### Redis-Backed Queue
+
+For multi-instance deployments:
+
+```typescript
+const autonomy = new TieredAutonomy(rules, {
+  persistence: 'redis',
+  redis: { host: 'localhost', port: 6379 },
+  ttlMs: 1800000,
+  onExpire: 'deny',
+});
+```
+
+---
+
+## Persona Layer
+
+Controls agent identity, system prompt composition, vocabulary, and output constraints.
+
+### Registering Personas
+
+```typescript
+import { PersonaManager } from '@epicai/legion';
+
+const persona = new PersonaManager();
+
+persona.register({
+  name: 'sentinel',
+  tone: 'commanding',
+  domain: 'cybersecurity',
+  systemPrompt: 'You are a sovereign threat intelligence officer.',
+  vocabulary: { host: 'endpoint', user: 'principal' },
+  constraints: ['Never speculate beyond available evidence.', 'Cite all source servers.'],
+});
+
+persona.register({
+  name: 'ops-lead',
+  tone: 'direct',
+  domain: 'devops',
+  systemPrompt: 'You are a DevOps lead managing infrastructure across AWS and Kubernetes.',
+});
+
+persona.register({
+  name: 'deal-desk',
+  tone: 'professional',
+  domain: 'sales',
+  systemPrompt: 'You are a deal desk analyst. Pull pipeline data from Salesforce, flag stalled deals, and draft follow-up actions.',
+});
+
+persona.register({
+  name: 'controller',
+  tone: 'precise',
+  domain: 'finance',
+  systemPrompt: 'You are a financial controller. Reconcile transactions across Stripe, QuickBooks, and Plaid. Flag discrepancies.',
+});
+
+persona.register({
+  name: 'chief',
+  tone: 'executive',
+  domain: 'leadership',
+  systemPrompt: 'You are the CEO\'s executive assistant. Surface KPIs from Salesforce, Stripe, and Jira. Summarize what needs attention today.',
+});
+
+persona.register({
+  name: 'pm',
+  tone: 'structured',
+  domain: 'product',
+  systemPrompt: 'You are a product manager. Track feature velocity in Jira, surface customer feedback from Zendesk, and flag blocked epics.',
+});
+
+persona.register({
+  name: 'people-ops',
+  tone: 'empathetic',
+  domain: 'hr',
+  systemPrompt: 'You are an HR business partner. Monitor onboarding status, PTO balances, and open requisitions across Google Workspace and Notion.',
+});
+```
+
+### Switching Personas
+
+```typescript
+persona.switch('controller');
+const prompt = persona.buildSystemPrompt({ memories: [], tools: [] });
+```
+
+### System Prompt Builder
+
+The builder assembles the final prompt from:
+
+1. Persona system prompt
+2. Constraints (appended as bullet list)
+3. Memory context (wrapped in `<DATA_CONTEXT>` tags)
+4. Tool context
+5. Vocabulary replacements (global find-and-replace)
+
+Injection patterns (`ignore previous`, `system:`, `you are`, `act as`) are automatically stripped from memory and tool context.
+
+---
+
+## Retrieval Layer
+
+Hybrid search with Reciprocal Rank Fusion (RRF). The `HybridRetriever` calls dense, sparse, and BM25 search methods and fuses results via RRF. The built-in `QdrantAdapter` currently uses payload text-filter fallback for all three methods — full vector search requires the consumer to provide pre-computed query embeddings. `InMemoryAdapter` is a test stub using substring matching.
+
+### Setup
+
+```typescript
+import { HybridRetriever } from '@epicai/legion';
+import { QdrantAdapter } from '@epicai/legion/retrieval/adapters/qdrant';
+
+const retriever = new HybridRetriever({
+  dense: { provider: 'qdrant', adapter: new QdrantAdapter({ host: 'localhost', port: 6333, collection: 'dense' }) },
+  sparse: { provider: 'qdrant', adapter: new QdrantAdapter({ host: 'localhost', port: 6333, collection: 'sparse' }) },
+  bm25: { provider: 'qdrant', adapter: new QdrantAdapter({ host: 'localhost', port: 6333, collection: 'bm25' }) },
+  maxResults: 10,
+  minScore: 0.0,
+  fusion: 'rrf',
+});
+```
+
+### Searching
+
+```typescript
+const results = await retriever.search('lateral movement indicators past 48h');
+// [{ id, content, fusionScore, fusionSources: [{ type, rank, originalScore }], metadata }]
+```
+
+Each result includes `fusionSources` showing which retrieval paths contributed and at what rank.
+
+### Indexing
+
+```typescript
+await retriever.index([
+  { id: 'doc-1', content: 'Threat report...', metadata: { source: 'splunk' } },
+  { id: 'doc-2', content: 'Vulnerability scan...', metadata: { source: 'qualys' } },
+  { id: 'doc-3', content: 'Deployment runbook...', metadata: { source: 'confluence' } },
+]);
+```
+
+### Fusion Strategies
+
+- **`'rrf'`** — Reciprocal Rank Fusion (default). No weight tuning needed.
+- **`'weighted'`** — Weighted sum per retrieval path. Requires manual weights.
+- **`'custom'`** — Provide your own `(resultSets) => RetrievalResult[]` function.
+
+### VectorStoreAdapter Interface
+
+```typescript
+interface VectorStoreAdapter {
+  searchDense(query: string, options: SearchOptions): Promise<ScoredResult[]>;
+  searchSparse(query: string, options: SearchOptions): Promise<ScoredResult[]>;
+  searchBM25(query: string, options: SearchOptions): Promise<ScoredResult[]>;
+  index(documents: IndexDocument[]): Promise<{ indexed: number; dense: number; sparse: number; bm25: number }>;
+}
+```
+
+Built-in adapters: `InMemoryAdapter` (test stub — substring matching only), `QdrantAdapter` (payload text-filter fallback — full vector search requires consumer-provided embeddings).
+
+---
+
+## Memory Layer
+
+Importance-weighted persistent memory with access-frequency auto-promotion.
+
+### Storing Memories
+
+```typescript
+import { PersistentMemory, InMemoryStore } from '@epicai/legion';
+
+const memory = new PersistentMemory({ store: new InMemoryStore(), cacheTTLMs: 300000 });
+
+await memory.etch('user-123', {
+  type: 'threat-finding',
+  content: 'Lateral movement detected from 10.0.1.45',
+  importance: 'high',
+  metadata: { source: 'crowdstrike', eventId: 'CS-2026-1234' },
+});
+
+await memory.etch('user-456', {
+  type: 'deal-update',
+  content: 'Acme Corp deal stalled at negotiation — no activity in 14 days',
+  importance: 'medium',
+  metadata: { source: 'salesforce', dealId: 'OPP-2026-5678' },
+});
+```
+
+### Recalling Memories
+
+```typescript
+const memories = await memory.recall('user-456', {
+  type: 'deal-update',
+  importance: 'medium',
+  limit: 10,
+  sortBy: 'importance',  // or 'recency' or 'frequency'
+});
+```
+
+Each recall increments `accessCount`. Frequently accessed memories are auto-promoted in importance.
+
+### Memory Context
+
+```typescript
+const ctx = await memory.context('user-123');
+// { totalMemories, memoryTypes, lastInteraction, importantMemories, ... }
+```
+
+### MemoryStoreAdapter Interface
+
+```typescript
+interface MemoryStoreAdapter {
+  save(userId: string, entry: MemoryEntry): Promise<StoredMemory>;
+  recall(userId: string, options: RecallOptions): Promise<StoredMemory[]>;
+  context(userId: string): Promise<ContextSummary>;
+  delete(userId: string, memoryId: string): Promise<void>;
+}
+```
+
+Built-in adapters: `InMemoryStore` (testing), `RedisMongoAdapter` (production — Redis cache + MongoDB persistence).
+
+---
+
+## Audit Layer
+
+SHA-256 hash-chained append-only logging. Every tool call, autonomy decision, and approval event is recorded with tamper-evident integrity.
+
+**Important distinction:** The audit trail is tamper-**evident**, not tamper-**proof**. `HashChain.verifyChain()` detects if any record in the stored chain has been modified or deleted. However, it cannot prevent an attacker with file-system access from rewriting the entire chain with recomputed hashes. For tamper-proof guarantees, replicate audit records to an external immutable store (e.g., AWS QLDB, blockchain anchoring, or a remote syslog with write-once storage).
+
+### Recording
+
+The orchestrator records actions automatically. For manual recording:
+
+```typescript
+import { AuditTrail } from '@epicai/legion';
+
+const audit = new AuditTrail({
+  store: 'append-only-log',
+  path: '/var/log/epic-ai/audit.jsonl',
+  integrity: 'sha256-chain',
+});
+await audit.init();
+```
+
+### Querying
+
+```typescript
+const records = await audit.query({
+  since: new Date('2026-03-01'),
+  tier: 'approve',
+  server: 'vault',
+  limit: 50,
+});
+```
+
+### Integrity Verification
+
+```typescript
+const result = await audit.verify();
+// { valid: true, chainLength: 1247 }
+// or { valid: false, chainLength: 1247, brokenAt: 892 }
+```
+
+### Export
+
+```typescript
+const csv = await audit.export('csv');
+const json = await audit.export('json');
+await audit.export('syslog');
+```
+
+### Hash Chain
+
+Each record contains:
+- `sequenceNumber` — monotonically increasing
+- `previousHash` — SHA-256 of the prior record
+- `hash` — SHA-256 of the current record (including `previousHash`)
+
+Modifying or deleting any record breaks the chain. `verify()` walks the full chain and reports the first broken link.
+
+### AuditStoreAdapter Interface
+
+```typescript
+interface AuditStoreAdapter {
+  append(record: ActionRecord): Promise<void>;
+  query(filter: AuditFilter): Promise<ActionRecord[]>;
+  verify(): Promise<{ valid: boolean; chainLength: number; brokenAt?: number }>;
+}
+```
+
+Built-in adapters: `InMemoryAuditAdapter` (testing), `JSONLAdapter` (production — atomic append to JSONL file).
+
+---
+
+## Orchestrator
+
+The orchestrator runs a plan-act-observe loop:
+
+1. **Retrieve** — HybridRetriever searches for relevant context (if configured)
+2. **Remember** — PersistentMemory recalls user-specific context (if configured)
+3. **Plan** — Local SLM receives the query, tools, and context. Selects tools to call.
+4. **Act** — For each tool call:
+   - Autonomy evaluates the action (auto/escalate/approve)
+   - If allowed: FederationManager executes the tool
+   - AuditTrail records the action
+5. **Observe** — Tool results feed back into the SLM for the next iteration
+6. **Repeat** — Until no more tool calls or `maxIterations` reached
+7. **Etch** — New memories stored (if tools were executed)
+8. **Synthesize** — Generator LLM produces the final response from curated context
+
+### Batch Execution
+
+```typescript
+const result = await agent.run('What needs my attention across all connected systems today?');
+// { response, events, actionsExecuted, actionsPending, persona, durationMs }
+```
+
+### Streaming
+
+```typescript
+for await (const event of agent.stream('Summarize open incidents, stalled deals, and blocked deployments')) {
+  switch (event.type) {
+    case 'plan': console.log('Planning:', event.data); break;
+    case 'action': console.log('Tool:', event.data.tool, 'on', event.data.server); break;
+    case 'approval-needed': console.log('Needs approval:', event.data.actionId); break;
+    case 'narrative': process.stdout.write(event.data.text); break;
+    case 'done': console.log('Complete:', event.data.loopIterations, 'iterations,', event.data.actionsExecuted, 'actions'); break;
+  }
+}
+```
+
+### StreamEvent Types (Discriminated Union)
+
+| Type | Interface | Data | Description |
+|------|-----------|------|-------------|
+| `plan` | `PlanEvent` | `{ iteration: number; toolCalls: string[] }` | Orchestrator selected tools for this iteration |
+| `action` | `ActionEvent` | `{ tool: string; server: string; durationMs: number }` | Tool executed |
+| `approval-needed` | `ApprovalNeededEvent` | `{ actionId: string; tool: string; server: string; tier: string }` | Action blocked, needs human approval |
+| `result` | `ResultEvent` | `{ tool: string; content: unknown; isError: boolean }` | Tool returned data |
+| `narrative` | `NarrativeEvent` | `{ text: string }` | Generator produced text |
+| `memory` | `MemoryEvent` | `{ etched: boolean; findingsCount: number }` | Memory etched after tool execution |
+| `error` | `ErrorEvent` | `{ message: string; tool?: string; server?: string }` | Error occurred |
+| `done` | `DoneEvent` | `{ loopIterations: number; actionsExecuted: number; actionsPending: number }` | Loop complete (1-based iteration count, run-local pending count) |
+
+---
+
+## Inference Gateway
+
+The Inference Gateway is a lightweight OpenAI-compatible HTTP proxy that sits in front of your local inference backends (Ollama, vLLM, llama.cpp, mlx-lm) and exposes them on a single endpoint at port 8000.
+
+### Starting the Gateway
+
+```bash
+legion-gateway
+# Listening on http://localhost:8000 (OpenAI-compatible)
+```
+
+The gateway auto-discovers running backends on startup and registers them as upstream targets. Any OpenAI-compatible client can point its `baseURL` to `http://localhost:8000/v1` without further configuration.
+
+### Routing Strategies
+
+| Strategy | Description |
+|----------|-------------|
+| `lowest-queue-depth` | Routes each request to the backend with the fewest in-flight requests. Default. |
+| `round-robin` | Distributes requests evenly across all healthy backends, regardless of load. |
+
+Configure via environment variable:
+
+```bash
+EPIC_GATEWAY_STRATEGY=round-robin legion-gateway
+```
+
+### Health Checks
+
+The gateway exposes a health endpoint that reports per-backend status:
+
+```
+GET http://localhost:8000/health
+```
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "backends": [
+    { "name": "ollama", "url": "http://localhost:11434", "status": "healthy", "queueDepth": 0 },  /* legacy — Ollama is deprecated; use llama.cpp or vLLM via the gateway */
+    { "name": "vllm",   "url": "http://localhost:8080",  "status": "healthy", "queueDepth": 2 }
+  ]
+}
+```
+
+### Deprecated Ollama Shim
+
+Prior to V2, the SDK included a built-in Ollama shim that translated OpenAI-format requests to the Ollama `/api/generate` endpoint. That shim is deprecated. Use `legion-gateway` instead — it handles Ollama, vLLM, llama.cpp, and mlx-lm through a single unified interface.
+
+---
+
+## Resilience
+
+### Rate Limiting
+
+```typescript
+import { RateLimiter } from '@epicai/legion';
+
+const limiter = new RateLimiter({
+  global: { requestsPerSecond: 100, burst: 200 },
+  perServer: { requestsPerSecond: 10, burst: 20 },
+});
+
+if (limiter.allow('splunk')) { /* proceed */ }
+const { remaining, resetsInMs } = limiter.remaining('splunk');
+```
+
+### Error Classification and Retry
+
+```typescript
+import { ErrorClassifier } from '@epicai/legion';
+
+const result = await ErrorClassifier.withRetry(
+  () => federation.callTool('splunk_search', { query: 'index=main' }),
+  { maxRetries: 3 },
+);
+```
+
+Error categories:
+- **Transient** (5xx, connection reset) — retry 3x, backoff 1s
+- **Rate-limited** (429) — retry 5x, backoff 5s
+- **Timeout** — retry 3x, backoff 2s
+- **Permanent** (4xx, auth failure) — no retry
+
+### Graceful Shutdown
+
+```typescript
+import { GracefulShutdown } from '@epicai/legion';
+
+const shutdown = new GracefulShutdown();
+shutdown.register({ name: 'save-audit', fn: () => audit.flush(), timeoutMs: 5000 });
+shutdown.register({ name: 'disconnect', fn: () => federation.disconnectAll(), timeoutMs: 10000 });
+
+const unsubscribe = shutdown.registerSignalHandlers(() => process.exit(0));
+```
+
+### Crash Recovery
+
+```typescript
+import { FileCheckpointStore } from '@epicai/legion';
+
+const checkpoint = new FileCheckpointStore('/var/lib/epic-ai/checkpoints');
+await checkpoint.save({ id: 'run-123', step: 5, context: { ... } });
+
+// After crash:
+const restored = await checkpoint.load('run-123');
+```
+
+### Prompt Cache
+
+```typescript
+import { PromptCache } from '@epicai/legion';
+
+const cache = new PromptCache({ maxEntries: 1000, defaultTTLMs: 300000 });
+const prompt = await cache.getOrCompute('user-123-context', async () => {
+  return buildExpensivePrompt();
+});
+```
+
+Shared in-flight promises prevent thundering herd on cache miss. LRU eviction at capacity.
+
+---
+
+## Observability
+
+### Event Callbacks
+
+```typescript
+import { ObservabilityEmitter } from '@epicai/legion';
+
+const emitter = new ObservabilityEmitter();
+
+// Production: forward events to your logging infrastructure
+emitter.onEvent((event) => {
+  myLogger.info({ type: event.type, ...event.data, timestamp: event.timestamp });
+});
+
+// Production: structured log callback
+emitter.onLog((entry) => {
+  myLogger[entry.level](entry.message, { layer: entry.layer, ...entry.data });
+});
+
+// Development only: built-in stderr logger (JSON lines, never stdout)
+// Accepts a list of keys to redact from nested payloads.
+emitter.onLog(ObservabilityEmitter.consoleLogger(['apiKey', 'token', 'password']));
+```
+
+`ObservabilityEmitter.consoleLogger()` writes structured JSON to `stderr` (not `stdout`) to avoid polluting application output. It is intended for local development and debugging — production deployments should use a dedicated logging callback.
+
+### GPU Verification Checklist
+
+For CPU and GPU verification runs, capture the following in a single run ID:
+
+- Run lifecycle: `runId`, start time, end time, duration, success/failure.
+- Stream steps: `plan`, `action`, `approval-needed`, `result`, `memory`, `narrative`, `error`, `done`.
+- Tool execution: tool name, adapter/server, input size, output size, duration, retries, timeout hits, and cancellation/abort reason.
+- Token usage: prompt tokens, completion tokens, total tokens, and token counts by role (`orchestrator`, `generator`, retrieval/memory if tracked separately).
+- Throughput: tokens/sec per model call and per run.
+- Rate limiting: provider throttles, retry-after values, backoff count, and failed retry attempts.
+- Redaction/safety: whether prompt/tool output was sanitized and whether sensitive keys were removed.
+- Transport: `stdio`, `http`, or `api`, plus connection setup time and disconnect reason.
+- Audit: record count, hash-chain state, and export target.
+- Logging: structured log path, Loki push success/failure, and any dropped log batches.
+
+Use `RunTelemetryCollector` for a readable per-run summary, `TokenTracker` for token/cost accounting, and `ObservabilityEmitter` for structured events/logs. Loki is the sink, not the summary.
+
+### Run Telemetry Summary
+
+When you need a single human-readable snapshot of one agent run, attach a `RunTelemetryCollector` to the same event/log stream:
+
+```typescript
+import { ObservabilityEmitter, RunTelemetryCollector } from '@epicai/legion';
+
+const emitter = new ObservabilityEmitter();
+const telemetry = new RunTelemetryCollector();
+
+const detach = telemetry.attach(emitter);
+
+// ... run the agent ...
+
+console.log(telemetry.format());
+detach();
+```
+
+The collector keeps recent stream events and log entries, counts event types, and produces a compact summary that is useful during local CPU and GPU verification runs.
+
+### Token and Cost Tracking
+
+```typescript
+import { TokenTracker } from '@epicai/legion';
+
+const tracker = new TokenTracker();
+tracker.record('openai', 'gpt-4.1', 'generator', { promptTokens: 1200, completionTokens: 340 });
+
+const summary = tracker.summary();
+// { totalTokens, totalCostUsd, byRole: { orchestrator, generator }, byModel: { ... } }
+```
+
+### OpenTelemetry Integration
+
+```typescript
+import { createOTelEventCallback, createOTelLogCallback } from '@epicai/legion';
+
+emitter.onEvent(createOTelEventCallback(spanExporter, traceId));
+emitter.onLog(createOTelLogCallback(logExporter));
+```
+
+---
+
+## MCP Server Adapters
+
+The SDK ships 4,135 integrations (624 REST-only, 3,242 MCP-only, 246 dual REST+MCP, 23 REST candidates) exposing 35,835 tools across security, DevOps, cloud infrastructure, observability, productivity, AI/ML, and business operations. Each implements `MCPAdapter` and handles authentication, request formatting, and response normalization. REST adapter source files are included under Elastic License 2.0. The SDK framework is Apache 2.0.
+
+### Security Operations
+
+| Category | Adapters |
+|----------|----------|
+| EDR / XDR | CrowdStrike Falcon, CrowdStrike Identity, Carbon Black, SentinelOne, Cybereason, Sophos, Trend Micro |
+| SIEM / Analytics | Splunk, IBM QRadar, Microsoft Sentinel, Sumo Logic, LogRhythm, Datadog Security, Coralogix, Elasticsearch |
+| Threat Intelligence | Recorded Future, ThreatConnect, Anomali, Mandiant |
+| Network Security | Palo Alto Networks, Fortinet, Check Point, Cisco Secure, Zscaler, Barracuda, Darktrace, Cloudflare |
+| Vulnerability Mgmt | Tenable, Qualys, Rapid7, Orca, Lacework, Wiz, Prisma Cloud |
+| Identity & Access | CyberArk, BeyondTrust, Delinea, Ping Identity |
+| GRC / Compliance | ServiceNow GRC, OneTrust, Drata |
+| Email Security | Proofpoint, Mimecast |
+| Incident Management | PagerDuty, Incident.io, Sentry |
+
+### DevOps & Infrastructure
+
+| Category | Adapters |
+|----------|----------|
+| CI/CD | GitHub, GitLab, Bitbucket, CircleCI, ArgoCD |
+| Containers & Orchestration | Kubernetes, Docker Hub, Terraform Registry |
+| Cloud Platforms | AWS, Azure, Google Cloud, Vercel, Cloudflare |
+| Databases | MongoDB, PostgreSQL, Redis, Snowflake, BigQuery, Neon, Supabase, Elasticsearch |
+
+### Observability
+
+| Category | Adapters |
+|----------|----------|
+| Monitoring & APM | Datadog Observability, Grafana, New Relic, Dynatrace, Prometheus, Coralogix |
+
+### Productivity & Collaboration
+
+| Category | Adapters |
+|----------|----------|
+| Communication | Slack, Microsoft Teams, Discord, Zoom, Twilio |
+| Project Management | Jira, Linear, Asana, Notion, Confluence |
+| Email & Calendar | Gmail, Google Calendar, SendGrid, Microsoft Graph |
+| Workspace | Google Drive, Google Workspace, Figma, Retool |
+
+### AI / ML Platforms
+
+| Category | Adapters |
+|----------|----------|
+| Model Providers | OpenAI API, Anthropic API, Ollama API, Hugging Face |
+| Frameworks | LangChain API, LlamaIndex API, Weights & Biases |
+
+### Business Operations
+
+| Category | Adapters |
+|----------|----------|
+| CRM & Marketing | Salesforce, HubSpot, LinkedIn |
+| Payments & Finance | Stripe, PayPal, Plaid, QuickBooks, Xero, Shopify |
+| Support | Zendesk, ServiceNow ITSM |
+| Content & Social | Twitter, Reddit, YouTube, Twitch, Dev.to, Substack, Stack Overflow |
+
+Managed adapter maintenance — keeping adapters current as vendor APIs and MCP specifications evolve — is available from [protectNIL Inc.](https://protectnil.com)
+
+### Using an Adapter
+
+```typescript
+import { SplunkMCPServer } from '@epicai/legion/mcp-servers/splunk';
+
+const splunk = new SplunkMCPServer({
+  host: 'splunk.corp.example.com',
+  username: process.env.SPLUNK_USER,
+  password: process.env.SPLUNK_PASS,
+});
+```
+
+Or connect via the FederationManager:
+
+```typescript
+await federation.connect('splunk', {
+  name: 'splunk',
+  transport: 'streamable-http',
+  url: 'https://splunk.corp.example.com:8089/mcp',
+  auth: { type: 'bearer', token: process.env.SPLUNK_TOKEN },
+});
+```
+
+---
+
+## Writing Custom Adapters
+
+### Custom MCP Server
+
+```typescript
+import { type MCPAdapter, type Tool, type ToolResult } from '@epicai/legion';
+
+class MyCustomAdapter implements MCPAdapter {
+  readonly name: string;
+  status: 'disconnected' | 'connecting' | 'connected' | 'error' = 'disconnected';
+
+  constructor(name: string) { this.name = name; }
+
+  async connect(): Promise<void> { /* negotiate transport */ }
+  async disconnect(): Promise<void> { /* cleanup */ }
+  async listTools(): Promise<Tool[]> { /* return tool definitions */ }
+  async callTool(name: string, args: Record<string, unknown>): Promise<ToolResult> { /* invoke */ }
+  async ping(): Promise<number> { /* return latency ms */ }
+}
+
+// Register with the federation
+const config = { name: 'my-tool', transport: 'stdio' as const, command: 'my-mcp-tool' };
+await federation.connect('my-tool', config, new MyCustomAdapter('my-tool'));
+```
+
+### Custom Vector Store
+
+```typescript
+import type { VectorStoreAdapter, ScoredResult, IndexDocument, SearchOptions } from '@epicai/legion';
+
+class MyVectorStore implements VectorStoreAdapter {
+  async searchDense(query: string, options: SearchOptions): Promise<ScoredResult[]> { /* semantic */ }
+  async searchSparse(query: string, options: SearchOptions): Promise<ScoredResult[]> { /* sparse */ }
+  async searchBM25(query: string, options: SearchOptions): Promise<ScoredResult[]> { /* keyword */ }
+  async index(documents: IndexDocument[]): Promise<{ indexed: number; dense: number; sparse: number; bm25: number }> { /* store */ }
+}
+```
+
+### Custom Memory Store
+
+```typescript
+import type { MemoryStoreAdapter } from '@epicai/legion';
+
+class MyMemoryStore implements MemoryStoreAdapter {
+  async save(userId, entry) { /* persist */ }
+  async recall(userId, options) { /* query + auto-promote */ }
+  async context(userId) { /* aggregate stats */ }
+  async delete(userId, memoryId) { /* soft delete */ }
+}
+```
+
+### Custom Audit Store
+
+```typescript
+import type { AuditStoreAdapter } from '@epicai/legion';
+
+class MyAuditStore implements AuditStoreAdapter {
+  async append(record) { /* atomic append */ }
+  async query(filter) { /* filtered retrieval */ }
+  async verify() { /* chain integrity check */ }
+}
+```
+
+---
+
+## Adapter Sandboxing
+
+`SandboxManager` wraps each adapter in an isolation boundary so that a misbehaving or compromised adapter cannot affect the host process or other adapters.
+
+### Sandbox Modes
+
+| Mode | Description |
+|------|-------------|
+| `process` | Spawns a child process per adapter. Strongest isolation; highest overhead. |
+| `worker-thread` | Runs adapter in a Node.js Worker thread. Isolates CPU and memory; shares the OS process. |
+| `none` | No sandbox. Adapter runs in-process. Use for trusted, well-tested adapters only. |
+
+### Configuration
+
+```typescript
+import { SandboxManager } from '@epicai/legion';
+
+const sandbox = new SandboxManager({
+  mode: 'process',            // 'process' | 'worker-thread' | 'none'
+  maxMemoryMb: 256,           // Kill adapter if RSS exceeds this value
+  timeoutMs: 10000,           // Kill adapter if a single tool call takes longer than this
+  allowedHosts: [             // Egress allowlist (process mode only)
+    'splunk.corp.example.com',
+    'api.crowdstrike.com',
+  ],
+  egressEnforcement: true,    // Block outbound connections not in allowedHosts
+});
+```
+
+Attach to the federation layer:
+
+```typescript
+const federation = new FederationManager({
+  servers: [...],
+  sandbox,
+});
+```
+
+When `mode: 'process'`, each adapter's child process is subject to `maxMemoryMb` and `timeoutMs` enforcement. Egress enforcement uses an outbound connection filter — connections to hosts not in `allowedHosts` are refused and logged to the audit trail. Worker-thread mode enforces `maxMemoryMb` and `timeoutMs` but does not restrict network egress (use `mode: 'process'` for network isolation).
+
+---
+
+## Testing
+
+The test suite is split into three lanes:
+
+| Command | What it runs | External dependencies |
+|---|---|---|
+| `npm test` | Unit tests + harness integration tests + MCP endpoint pings | None |
+| `npm run test:integration` | LLM integration tests (`tests/integration/`) | Running local inference backend with model pulled |
+| `npm run test:harness` | Standalone transport check (stdio, HTTP, API) | None |
+
+```bash
+npm test                  # Default suite — all tests except integration/
+npm run test:integration  # Requires local inference backend running
+npm run test:harness      # Standalone harness check (no vitest)
+npm run test:watch        # Watch mode (default suite)
+npm run build             # TypeScript compile
+```
+
+### Default suite (`npm test`)
+
+Runs via `vitest run`. Includes unit tests, harness transport tests, orchestrator integration tests, and MCP server endpoint pings. Does not require any external services. Excludes `tests/integration/**` because those tests require a running local inference backend and will hang during vitest file collection if one is not available.
+
+### Integration suite (`npm run test:integration`)
+
+Runs all tests under `tests/integration/` against real LLM inference. Expects a local inference backend (gateway on `http://localhost:8000` or llama.cpp on `http://localhost:8080`) with `llama3.1:8b` loaded. Tests skip gracefully if no backend is available, but the files must still be run in their own vitest invocation to avoid collection-phase hangs.
+
+The integration suite is organized into three directories:
+
+#### `tests/integration/llm.test.ts` — Basic Provider Tests (2 tests)
+
+Validates that `createOrchestratorLLM` can produce text responses and make tool calls against a local inference backend. Baseline smoke test for the provider abstraction.
+
+#### `tests/integration/air-gapped/` — Air-Gapped Full-Stack Tests (20 tests, ~35 LLM calls)
+
+Exercises the orchestrator with a local inference backend on both sides (orchestrator AND generator). Zero external API calls — all inference stays on the local machine. Designed for environments where no data may leave the infrastructure.
+
+| Section | Tests | What it validates |
+|---|---|---|
+| Tool Selection Accuracy | 5 | Correct tool selected from 8 available tools for threat hunting, identity checks, EDR queries, CVE lookups, and network flow analysis |
+| Multi-Step Chaining | 3 | Orchestrator iterates: search→identity check, list→isolate endpoint, three-step search→correlate→respond |
+| Argument Extraction | 3 | Enum values, compound filters, and structured fields extracted from natural language |
+| Stop Conditions | 2 | Direct response for general knowledge; stops after complete tool result instead of looping |
+| Throughput & Latency | 3 | Single inference latency, 5 concurrent requests (p50/p95), token generation rate (tokens/sec) |
+| Long Context | 2 | Correct routing with ~2K token system prompt + 10-message history; synthesis from large (~2K token) tool results without hallucination |
+| Adversarial | 2 | Prompt injection resistance; semantic tool selection despite misleading keyword overlap |
+
+**CPU runtime:** Expect 20–40 minutes depending on hardware (each LLM call takes 10–60s on CPU).
+**GPU runtime:** Under 5 minutes on an H100.
+
+```bash
+# Air-gapped only (requires local inference backend, nothing else)
+npm run test:integration
+```
+
+#### `tests/integration/hybrid/` — Hybrid Cloud Handoff Tests (3 tests)
+
+Tests the full orchestrator→generator handoff: local SLM selects tools, cloud OpenAI LLM synthesizes the response from curated tool results. Validates the core architectural claim that tool schemas never reach the cloud LLM.
+
+| Test | Local calls | OpenAI calls | What it validates |
+|---|---|---|---|
+| Tool select → cloud synthesis | 1 | 1 | Orchestrator selects tool, generator produces actionable briefing from tool result |
+| Data sovereignty verification | 1 | 1 | Generator messages contain zero tool schema keywords; tool definitions stay local |
+| Multi-step + cloud synthesis | 2 | 1 | Two-step orchestrator loop, generator synthesizes executive briefing from all results |
+
+**Gated on `OPENAI_API_KEY`.** Tests skip gracefully if the env var is absent. Cost per run: ~$0.01 in OpenAI API calls.
+
+```bash
+# Full integration suite (air-gapped + hybrid if OPENAI_API_KEY is set)
+OPENAI_API_KEY=sk-... npm run test:integration
+```
+
+### Standalone harness check (`npm run test:harness`)
+
+Runs `tests/harness-check.ts` via `npx tsx` — no vitest. Spawns real MCP servers over all three transport profiles (stdio, HTTP, API), executes 15 assertions per profile (45 total), and calls `process.exit()` on completion. Use this to verify transport correctness independent of the test framework.
+
+### Writing tests with mock LLMs
+
+The SDK provides in-memory adapters for all extension points, enabling fully offline testing:
+
+```typescript
+import { EpicAI } from '@epicai/legion';
+
+const agent = await EpicAI.create({
+  orchestrator: { provider: 'custom', model: 'test', llm: mockLLM },
+  federation: { servers: [] },
+  autonomy: { tiers: { auto: ['*'], escalate: [], approve: [] } },
+  persona: { name: 'test', tone: 'neutral', domain: 'test', systemPrompt: 'Test.' },
+  audit: { store: 'memory', integrity: 'none' },
+});
+```
+
+---
+
+## CLI Setup Tool
+
+Interactive setup wizard and CLI commands:
+
+```bash
+legion                         # Setup wizard
+legion query "<question>"      # Route and call
+legion list                    # Show Curated + Custom adapters
+legion search [term]           # Search all 4,135 adapters
+legion configure               # Connect your APIs and credentials
+legion add <id>                # Add an adapter
+legion remove <id>             # Remove an adapter
+legion health                  # Check adapter status
+legion serve                   # Start as MCP server
+legion help                    # Show all commands
+```
+
+The wizard:
+1. Detects system — Node.js, platform, local LLMs (probes llama.cpp on `http://localhost:8080`, Ollama on `http://localhost:11434`, vLLM on `http://localhost:8000`)
+2. Scans for AI clients — Claude Code, Cursor, Windsurf, VS Code, Codex, Gemini, and more
+3. Auto-configures MCP client configs with your permission
+4. Configures curated zero-credential adapters
+5. Runs a routing demo to prove each query routes to the correct adapter
+
+---
+
+## Enterprise Trust
+
+The trust layer enforces authentication, access policy, and supply-chain integrity across the SDK. All three components operate before any tool invocation reaches the federation layer.
+
+### AuthMiddleware
+
+`AuthMiddleware` validates inbound requests (e.g., from an HTTP wrapper around the agent) and attaches a verified identity to the request context. Unverified requests are rejected before the orchestrator loop starts.
+
+```typescript
+import { AuthMiddleware } from '@epicai/legion';
+
+const auth = new AuthMiddleware({
+  provider: 'jwt',                        // 'jwt' | 'api-key' | 'mtls'
+  jwksUri: 'https://auth.corp.com/.well-known/jwks.json',
+  audience: 'legion-gateway',
+  clockSkewSeconds: 30,
+});
+
+// Attach to your HTTP handler
+app.use(auth.middleware());
+```
+
+### AccessPolicyEngine
+
+`AccessPolicyEngine` enforces which identities may invoke which tools. Policies are evaluated per tool call after the orchestrator selects tools but before the federation layer executes them.
+
+```typescript
+import { AccessPolicyEngine } from '@epicai/legion';
+
+const policy = new AccessPolicyEngine();
+await policy.loadPolicyFromFile('/etc/epic-ai/access-policy.yaml');
+
+// Or define policies inline
+policy.addRule({
+  principal: 'role:analyst',
+  allow: ['read', 'search', 'query'],
+  deny: ['delete', 'revoke', 'terminate'],
+});
+
+policy.addRule({
+  principal: 'role:admin',
+  allow: ['*'],
+});
+```
+
+Policy files use a simple YAML schema. The engine evaluates rules in order; first match wins. Denies take precedence over allows within the same rule.
+
+Attach to the autonomy layer:
+
+```typescript
+const autonomy = new TieredAutonomy(rules, approvalQueueConfig, { policyEngine: policy });
+```
+
+### ArtifactVerifier
+
+`ArtifactVerifier` validates adapter supply-chain integrity before loading. It checks that adapter packages match their published checksums and that signing keys are trusted — preventing a compromised registry or tampered package from executing inside the SDK.
+
+```typescript
+import { ArtifactVerifier } from '@epicai/legion';
+
+const verifier = new ArtifactVerifier({
+  trustedKeys: ['/etc/epic-ai/signing-keys/protectnil.pub'],
+  requireSignature: true,           // Reject adapters without a valid signature
+  checksumAlgorithm: 'sha256',
+  failOpen: false,                  // true = warn only; false = throw on verification failure
+});
+
+// Verify before connecting
+await verifier.verifyAdapter('@epicai/legion/mcp-servers/splunk');
+```
+
+### createSecretsProvider
+
+`createSecretsProvider` abstracts secret retrieval so adapter credentials are never hardcoded or stored in config files. Supported backends: HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, environment variables.
+
+```typescript
+import { createSecretsProvider } from '@epicai/legion';
+
+const secrets = createSecretsProvider({
+  backend: 'vault',
+  address: 'https://vault.corp.example.com',
+  token: process.env.VAULT_TOKEN,
+  mountPath: 'secret/epic-ai',
+});
+
+const splunkToken = await secrets.get('splunk/api-token');
+const csToken = await secrets.get('crowdstrike/client-secret');
+```
+
+Pass the secrets provider to `FederationManager` to have credentials resolved at connection time rather than at startup:
+
+```typescript
+const federation = new FederationManager({
+  servers: [...],
+  secrets,
+});
+```
+
+---
+
+*Epic AI® Legion — Intelligent Virtual Assistant (IVA) Platform | Built by [protectNIL Inc.](https://protectnil.com) | U.S. Reg. No. 7,748,019*
